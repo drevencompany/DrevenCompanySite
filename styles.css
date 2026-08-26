@@ -586,6 +586,13 @@ nav .util {
 
 @media (max-width: 820px) {
   #hero .tl, #hero .br { position: static; text-align: left; margin-bottom: 16px; }
+  #hero .acts {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 12px;
+  }
 }
 
 /* ── 2 · MANIFESTO / SOBRE ─────────────────────────────────────── */
