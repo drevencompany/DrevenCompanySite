@@ -1,0 +1,27 @@
+{
+  "name": "dreven-company",
+  "version": "1.0.0",
+  "description": "Dreven Company — Holding de Estratégia, Engenharia de Produto e IA Aplicada",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "keywords": [
+    "dreven",
+    "company",
+    "holding",
+    "ai",
+    "product-engineering",
+    "strategy"
+  ],
+  "author": "Daniel M. Santos — Dreven Company",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "nodemailer": "^6.9.14"
+  }
+}

@@ -1,0 +1,22 @@
+# Segredos e Variáveis de Ambiente
+.env
+.env.*
+.env.local
+.mcp.json
+
+# Banco de Dados e Dados Pessoais de Clientes (LGPD / Sigilo)
+server/data/
+*.sqlite
+*.db
+
+# Dependências e Builds
+node_modules/
+.vercel/
+.codex/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db
