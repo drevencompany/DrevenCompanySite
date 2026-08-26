@@ -392,14 +392,6 @@
       setTimeout(() => toast.classList.remove('show'), 3200);
     }
 
-    function openPanel() {
-      const overlay = document.getElementById('admin-overlay');
-      const floating = document.getElementById('admin-floating-btn');
-      if (overlay) overlay.classList.add('open');
-      if (floating) floating.style.display = 'none';
-      render();
-    }
-
     function lockScroll(lock) {
       if (lock) {
         document.documentElement.classList.add('admin-locked');
