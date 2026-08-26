@@ -4,6 +4,7 @@
   "description": "Dreven Company — Holding de Estratégia, Engenharia de Produto e IA Aplicada",
   "main": "server/server.js",
   "scripts": {
+    "build": "echo ok",
     "start": "node server/server.js",
     "dev": "node server/server.js"
   },
