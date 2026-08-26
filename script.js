@@ -400,11 +400,31 @@
       render();
     }
 
+    function lockScroll(lock) {
+      if (lock) {
+        document.documentElement.classList.add('admin-locked');
+        document.body.classList.add('admin-locked');
+      } else {
+        document.documentElement.classList.remove('admin-locked');
+        document.body.classList.remove('admin-locked');
+      }
+    }
+
+    function openPanel() {
+      const overlay = document.getElementById('admin-overlay');
+      const floating = document.getElementById('admin-floating-btn');
+      if (overlay) overlay.classList.add('open');
+      if (floating) floating.style.display = 'none';
+      lockScroll(true);
+      render();
+    }
+
     function minimizePanel() {
       const overlay = document.getElementById('admin-overlay');
       const floating = document.getElementById('admin-floating-btn');
       if (overlay) overlay.classList.remove('open');
       if (floating) floating.style.display = 'inline-flex';
+      lockScroll(false);
     }
 
     function login() {
@@ -420,6 +440,7 @@
       const floating = document.getElementById('admin-floating-btn');
       if (overlay) overlay.classList.remove('open');
       if (floating) floating.style.display = 'none';
+      lockScroll(false);
       showToast('Sessão administrativa encerrada.');
     }
 
@@ -456,17 +477,45 @@
       return digits.startsWith('55') ? digits : '55' + digits;
     }
 
-    function getStatusBadge(status) {
-      const map = {
-        novo: { label: 'Novo Lead', class: 'status-novo' },
-        em_contato: { label: 'Em Contato', class: 'status-em_contato' },
-        agendado: { label: 'Diagnóstico Agendado', class: 'status-agendado' },
-        proposta: { label: 'Proposta Enviada', class: 'status-proposta' },
-        convertido: { label: 'Convertido', class: 'status-convertido' },
-        arquivado: { label: 'Arquivado', class: 'status-arquivado' }
-      };
-      const info = map[status] || map.novo;
-      return `<span class="status-badge ${info.class}">${info.label}</span>`;
+    function renderStatusSelect(leadId, currentStatus) {
+      const statuses = [
+        { val: 'novo', label: 'Novo Lead' },
+        { val: 'em_contato', label: 'Em Contato' },
+        { val: 'agendado', label: 'Agendado' },
+        { val: 'proposta', label: 'Proposta Enviada' },
+        { val: 'convertido', label: 'Convertido' },
+        { val: 'arquivado', label: 'Arquivado' }
+      ];
+      const safeStatus = currentStatus || 'novo';
+      const optionsHtml = statuses.map(s => 
+        `<option value="${s.val}" ${s.val === safeStatus ? 'selected' : ''}>${s.label}</option>`
+      ).join('');
+
+      return `
+        <div class="status-select-wrap">
+          <select class="status-quick-select status-${safeStatus}" onchange="AdminDashboard.updateStatus('${leadId}', this.value)" title="Clique para alterar status">
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+    }
+
+    function updateStatus(leadId, newStatus) {
+      const leads = getLocalLeads();
+      const index = leads.findIndex(l => l.id === leadId);
+      if (index !== -1) {
+        leads[index].status = newStatus;
+        leads[index].updatedAt = new Date().toISOString();
+        setLocalLeads(leads);
+        render();
+        showToast('Status atualizado.');
+
+        fetch(`/api/leads/${leadId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        }).catch(() => {});
+      }
     }
 
     function render() {
@@ -477,7 +526,7 @@
 
       // Atualiza KPIs
       const total = leads.length;
-      const novos = leads.filter(l => l.status === 'novo').length;
+      const novos = leads.filter(l => (l.status || 'novo') === 'novo').length;
       const emAtendimento = leads.filter(l => ['em_contato', 'agendado', 'proposta'].includes(l.status)).length;
       const convertidos = leads.filter(l => l.status === 'convertido').length;
 
@@ -493,6 +542,7 @@
 
       // Filtragem
       const filtered = leads.filter(lead => {
+        const leadStatus = lead.status || 'novo';
         const matchesSearch = !searchVal ||
           (lead.name && lead.name.toLowerCase().includes(searchVal)) ||
           (lead.email && lead.email.toLowerCase().includes(searchVal)) ||
@@ -500,7 +550,7 @@
           (lead.segment && lead.segment.toLowerCase().includes(searchVal)) ||
           (lead.notes && lead.notes.toLowerCase().includes(searchVal));
 
-        const matchesStatus = filterStatus === 'todos' || lead.status === filterStatus;
+        const matchesStatus = filterStatus === 'todos' || leadStatus === filterStatus;
         const matchesSegment = filterSegment === 'todos' || (lead.segment && lead.segment.toLowerCase().includes(filterSegment.toLowerCase()));
 
         return matchesSearch && matchesStatus && matchesSegment;
@@ -526,8 +576,9 @@
 
         const phoneDigits = formatPhoneDigits(lead.phone);
         
-        // Mensagem pronta personalizada solicitada pelo usuário
-        const wppMessage = `Olá, ${lead.name.split(' ')[0] || lead.name}! Me chamo Daniel, da Dreven Company. Estou entrando em contato referente à sua solicitação de diagnóstico em nosso site. Como posso ajudar seu negócio a escalar hoje?`;
+        // Mensagem pronta oficial
+        const firstName = (lead.name || 'Cliente').split(' ')[0];
+        const wppMessage = `Olá, ${firstName}! Me chamo Daniel, da Dreven Company. Estou entrando em contato referente à sua solicitação de diagnóstico em nosso site. Como posso ajudar seu negócio a escalar hoje?`;
         const wppUrl = phoneDigits ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(wppMessage)}` : '#';
 
         const emailSubject = `Dreven Company — Diagnóstico e Alinhamento Estratégico`;
@@ -553,9 +604,7 @@
               <span class="lead-segment-badge" title="${lead.segment || 'Geral'}">${lead.segment || 'Não informado'}</span>
             </td>
             <td>
-              <div style="cursor: pointer;" onclick="AdminDashboard.openEditModal('${lead.id}')" title="Clique para alterar status">
-                ${getStatusBadge(lead.status)}
-              </div>
+              ${renderStatusSelect(lead.id, lead.status)}
             </td>
             <td>
               <div class="lead-actions-cell">
@@ -567,10 +616,10 @@
                 <a href="${mailtoUrl}" class="lead-action-btn action-email" title="Enviar e-mail de resposta">
                   <span>E-mail</span>
                 </a>
-                <button class="lead-action-btn action-icon-only" onclick="AdminDashboard.openEditModal('${lead.id}')" title="Ver detalhes e anotações">
+                <button type="button" class="lead-action-btn action-icon-only" onclick="AdminDashboard.openEditModal('${lead.id}')" title="Ver detalhes e anotações">
                   ✏️
                 </button>
-                <button class="lead-action-btn action-icon-only action-icon-danger" onclick="AdminDashboard.deleteLead('${lead.id}')" title="Excluir lead">
+                <button type="button" class="lead-action-btn action-icon-only action-icon-danger" onclick="AdminDashboard.requestDelete('${lead.id}')" title="Excluir lead">
                   🗑️
                 </button>
               </div>
@@ -605,9 +654,10 @@
 
       const delBtn = document.getElementById('admin-delete-lead-btn');
       if (delBtn) {
-        delBtn.onclick = () => {
-          deleteLead(lead.id);
+        delBtn.onclick = (e) => {
+          e.preventDefault();
           closeEditModal();
+          requestDelete(lead.id);
         };
       }
 
@@ -619,13 +669,36 @@
       if (modal) modal.classList.remove('open');
     }
 
-    function deleteLead(leadId) {
-      if (!confirm('Deseja realmente remover este lead do painel?')) return;
+    function requestDelete(leadId) {
+      const leads = getLocalLeads();
+      const lead = leads.find(l => l.id === leadId);
+      const leadName = lead ? lead.name : 'este lead';
+
+      const modal = document.getElementById('admin-modal-delete-confirm');
+      const targetIdInput = document.getElementById('delete-target-id');
+      const confirmText = document.getElementById('admin-delete-confirm-text');
+
+      if (targetIdInput) targetIdInput.value = leadId;
+      if (confirmText) confirmText.textContent = `Tem certeza que deseja excluir "${leadName}"? Esta ação removerá o lead do painel.`;
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeDeleteModal() {
+      const modal = document.getElementById('admin-modal-delete-confirm');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function executeDelete() {
+      const targetIdInput = document.getElementById('delete-target-id');
+      const leadId = targetIdInput ? targetIdInput.value : null;
+      if (!leadId) return;
+
       let leads = getLocalLeads();
       leads = leads.filter(l => l.id !== leadId);
       setLocalLeads(leads);
       render();
-      showToast('Lead removido com sucesso.');
+      closeDeleteModal();
+      showToast('Lead excluído com sucesso.');
 
       fetch(`/api/leads/${leadId}`, { method: 'DELETE' }).catch(() => {});
     }
@@ -645,7 +718,7 @@
         `"${(l.email || '').replace(/"/g, '""')}"`,
         `"${(l.phone || '').replace(/"/g, '""')}"`,
         `"${(l.segment || '').replace(/"/g, '""')}"`,
-        `"${(l.status || '').replace(/"/g, '""')}"`,
+        `"${(l.status || 'novo').replace(/"/g, '""')}"`,
         `"${(l.source || '').replace(/"/g, '""')}"`,
         `"${(l.notes || '').replace(/"/g, '""')}"`
       ]);
@@ -664,7 +737,6 @@
 
     // Inicialização de Listeners do Painel
     function init() {
-      // Abre se já estava autenticado na sessão
       if (isLoggedIn()) {
         const floating = document.getElementById('admin-floating-btn');
         if (floating) floating.style.display = 'inline-flex';
@@ -733,6 +805,10 @@
           }).catch(() => {});
         }
       });
+
+      // Modal Exclusão de Lead
+      document.getElementById('admin-cancel-delete')?.addEventListener('click', closeDeleteModal);
+      document.getElementById('admin-confirm-delete-btn')?.addEventListener('click', executeDelete);
     }
 
     return {
@@ -742,7 +818,8 @@
       openPanel,
       minimizePanel,
       openEditModal,
-      deleteLead,
+      requestDelete,
+      updateStatus,
       saveLeadLocal
     };
   })();

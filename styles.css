@@ -1982,13 +1982,36 @@ footer .legal {
 
 /* Área Principal do Dashboard */
 .admin-body {
-  flex: 1;
+  flex: 1 1 0%;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   padding: 24px 28px;
   display: flex;
   flex-direction: column;
   gap: 22px;
   background: #090809;
+}
+
+/* Scrollbar estilizada para o painel */
+.admin-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-body::-webkit-scrollbar-track {
+  background: #0D0C0E;
+}
+
+.admin-body::-webkit-scrollbar-thumb {
+  background: #28252C;
+  border-radius: 4px;
+}
+
+.admin-body::-webkit-scrollbar-thumb:hover {
+  background: #3D3943;
 }
 
 /* Linha de KPIs / Métricas */
@@ -2200,53 +2223,75 @@ footer .legal {
   text-overflow: ellipsis;
 }
 
-/* Status Badges */
-.status-badge {
+/* Bloqueio de rolagem do body quando o painel ou modal estiver aberto */
+html.admin-locked, body.admin-locked {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+
+/* Status Badges & Quick Select */
+.status-select-wrap {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+}
+
+.status-quick-select {
+  appearance: none;
+  -webkit-appearance: none;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  padding: 6px 24px 6px 12px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 8px 8px;
 }
 
-.status-badge.status-novo {
-  background: rgba(245, 158, 11, 0.15);
+.status-quick-select.status-novo {
+  background-color: rgba(245, 158, 11, 0.18);
   color: #FBBF24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
-.status-badge.status-em_contato {
-  background: rgba(139, 92, 246, 0.15);
+.status-quick-select.status-em_contato {
+  background-color: rgba(139, 92, 246, 0.18);
   color: #C084FC;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(139, 92, 246, 0.4);
 }
 
-.status-badge.status-agendado {
-  background: rgba(59, 130, 246, 0.15);
+.status-quick-select.status-agendado {
+  background-color: rgba(59, 130, 246, 0.18);
   color: #60A5FA;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.4);
 }
 
-.status-badge.status-proposta {
-  background: rgba(236, 72, 153, 0.15);
+.status-quick-select.status-proposta {
+  background-color: rgba(236, 72, 153, 0.18);
   color: #F472B6;
-  border: 1px solid rgba(236, 72, 153, 0.3);
+  border: 1px solid rgba(236, 72, 153, 0.4);
 }
 
-.status-badge.status-convertido {
-  background: rgba(16, 185, 129, 0.15);
+.status-quick-select.status-convertido {
+  background-color: rgba(16, 185, 129, 0.18);
   color: #34D399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.4);
 }
 
-.status-badge.status-arquivado {
-  background: rgba(100, 116, 139, 0.15);
+.status-quick-select.status-arquivado {
+  background-color: rgba(100, 116, 139, 0.18);
   color: #94A3B8;
-  border: 1px solid rgba(100, 116, 139, 0.3);
+  border: 1px solid rgba(100, 116, 139, 0.4);
+}
+
+.status-quick-select option {
+  background: #121013;
+  color: #F4F2F3;
 }
 
 /* Ações de Lead */

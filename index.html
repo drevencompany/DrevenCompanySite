@@ -912,13 +912,29 @@
         <textarea id="edit-lead-notes" placeholder="Anotações de reuniões, propostas, alinhamento técnico..."></textarea>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-        <button type="button" id="admin-delete-lead-btn" class="admin-btn admin-btn-danger">Excluir Lead</button>
+        <button type="button" id="admin-delete-lead-btn" class="admin-btn admin-btn-danger">🗑️ Excluir Lead</button>
         <div style="display: flex; gap: 10px;">
           <button type="button" id="admin-cancel-edit" class="admin-btn admin-btn-secondary">Fechar</button>
           <button type="submit" class="admin-btn admin-btn-primary">Salvar Alterações</button>
         </div>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão (100% Customizado e Seguro) -->
+<div id="admin-modal-delete-confirm" class="admin-submodal" role="dialog" aria-modal="true" aria-label="Confirmar Exclusão de Lead">
+  <div class="admin-submodal-box" style="max-width: 420px; text-align: center;">
+    <div style="font-size: 32px; margin-bottom: 8px;">⚠️</div>
+    <h3 style="font-size: 17px; font-weight: 700; margin-bottom: 8px;">Excluir este Lead?</h3>
+    <p id="admin-delete-confirm-text" style="font-size: 13px; color: #B0B0B0; line-height: 1.5; margin-bottom: 20px;">
+      Esta ação removerá o lead e todo o seu histórico do painel. Deseja prosseguir?
+    </p>
+    <input type="hidden" id="delete-target-id">
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button type="button" id="admin-cancel-delete" class="admin-btn admin-btn-secondary" style="flex: 1; padding: 12px;">Cancelar</button>
+      <button type="button" id="admin-confirm-delete-btn" class="admin-btn admin-btn-danger" style="flex: 1; padding: 12px; font-weight: 700;">Sim, Excluir</button>
+    </div>
   </div>
 </div>
 
