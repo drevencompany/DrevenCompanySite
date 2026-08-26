@@ -51,18 +51,57 @@ function saveLead(leadData) {
  * @param {number} limit
  * @returns {Array}
  */
-function getLeads(limit = 50) {
+/**
+ * Atualiza os dados de um lead existente
+ * @param {string} id
+ * @param {Object} updates
+ * @returns {Object|null}
+ */
+function updateLead(id, updates) {
   try {
     const raw = fs.readFileSync(LEADS_FILE, 'utf-8');
     const leads = JSON.parse(raw || '[]');
-    return leads.slice(0, limit);
+    const index = leads.findIndex(l => l.id === id);
+    if (index === -1) return null;
+
+    leads[index] = {
+      ...leads[index],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+
+    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2), 'utf-8');
+    return leads[index];
   } catch (err) {
-    console.error('[Storage Error] Falha ao ler leads:', err);
-    return [];
+    console.error('[Storage Error] Falha ao atualizar lead:', err);
+    throw err;
+  }
+}
+
+/**
+ * Remove um lead por ID
+ * @param {string} id
+ * @returns {boolean}
+ */
+function deleteLead(id) {
+  try {
+    const raw = fs.readFileSync(LEADS_FILE, 'utf-8');
+    let leads = JSON.parse(raw || '[]');
+    const initialLen = leads.length;
+    leads = leads.filter(l => l.id !== id);
+    if (leads.length === initialLen) return false;
+
+    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2), 'utf-8');
+    return true;
+  } catch (err) {
+    console.error('[Storage Error] Falha ao excluir lead:', err);
+    throw err;
   }
 }
 
 module.exports = {
   saveLead,
-  getLeads
+  getLeads,
+  updateLead,
+  deleteLead
 };

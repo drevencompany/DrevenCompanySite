@@ -721,6 +721,213 @@
   </div>
 </footer>
 
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PAINEL ADMINISTRATIVO DREVEN COMPANY (DASHBOARD EXCLUSIVO)       -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+
+<!-- Botão Flutuante (Aparece quando autenticado como Administrador) -->
+<button id="admin-floating-btn" class="admin-floating-btn" style="display:none;" aria-label="Abrir Painel Administrativo">
+  <span class="admin-status-dot"></span>
+  <span>Painel Dreven</span>
+</button>
+
+<!-- Overlay Principal do Dashboard -->
+<div id="admin-overlay" class="admin-overlay" role="dialog" aria-modal="true" aria-label="Painel Administrativo Dreven Company">
+  <div class="admin-panel-container">
+    
+    <!-- Topo / Header -->
+    <header class="admin-header">
+      <div class="admin-header-brand">
+        <span class="brand-badge">DREVEN CO.</span>
+        <div class="brand-title">
+          <h1>Painel de Controle de Leads &amp; Clientes</h1>
+          <span>Autenticado como Daniel M. Santos (Fundador &amp; Operador)</span>
+        </div>
+      </div>
+      <div class="admin-header-actions">
+        <button id="admin-btn-new" class="admin-btn admin-btn-primary" title="Adicionar novo lead manualmente">
+          <span>+ Novo Lead</span>
+        </button>
+        <button id="admin-btn-export" class="admin-btn admin-btn-secondary" title="Exportar leads em formato CSV">
+          <span>Exportar (CSV)</span>
+        </button>
+        <button id="admin-btn-refresh" class="admin-btn admin-btn-secondary" title="Atualizar lista de leads">
+          <span>↻ Sincronizar</span>
+        </button>
+        <button id="admin-btn-minimize" class="admin-btn admin-btn-ghost" title="Minimizar painel e ver site">
+          <span>Ver Site</span>
+        </button>
+        <button id="admin-btn-logout" class="admin-btn admin-btn-danger" title="Encerrar sessão de administrador">
+          <span>Sair</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Corpo do Dashboard -->
+    <main class="admin-body">
+      
+      <!-- KPIs / Métricas Rápidas -->
+      <section class="admin-kpis">
+        <div class="admin-kpi-card kpi-total">
+          <span class="kpi-label">Total de Leads</span>
+          <span class="kpi-value" id="kpi-total-val">0</span>
+          <span class="kpi-desc">Cadastros e solicitações recebidas</span>
+        </div>
+        <div class="admin-kpi-card kpi-new">
+          <span class="kpi-label">Novos / Pendentes</span>
+          <span class="kpi-value" id="kpi-new-val">0</span>
+          <span class="kpi-desc">Aguardando primeiro contato</span>
+        </div>
+        <div class="admin-kpi-card kpi-contact">
+          <span class="kpi-label">Em Atendimento</span>
+          <span class="kpi-value" id="kpi-contact-val">0</span>
+          <span class="kpi-desc">Em diagnóstico ou proposta</span>
+        </div>
+        <div class="admin-kpi-card kpi-won">
+          <span class="kpi-label">Convertidos / Fechados</span>
+          <span class="kpi-value" id="kpi-won-val">0</span>
+          <span class="kpi-desc">Contratos e projetos alinhados</span>
+        </div>
+      </section>
+
+      <!-- Barra de Filtros e Busca -->
+      <section class="admin-toolbar">
+        <div class="admin-search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="admin-search-input" placeholder="Pesquisar por nome, e-mail, WhatsApp ou nicho..." autocomplete="off">
+        </div>
+        <div class="admin-filter-group">
+          <select id="admin-filter-status" class="admin-select" aria-label="Filtrar por status">
+            <option value="todos">Todos os Status</option>
+            <option value="novo">Novo</option>
+            <option value="em_contato">Em Contato</option>
+            <option value="agendado">Diagnóstico Agendado</option>
+            <option value="proposta">Proposta Enviada</option>
+            <option value="convertido">Convertido</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+          <select id="admin-filter-segment" class="admin-select" aria-label="Filtrar por segmento">
+            <option value="todos">Todos os Segmentos</option>
+            <option value="Saúde & Medicina">Saúde &amp; Medicina</option>
+            <option value="Tecnologia">Tecnologia, SaaS &amp; Softwares</option>
+            <option value="E-commerce">E-commerce &amp; Varejo</option>
+            <option value="Serviços Jurídicos">Serviços Jurídicos</option>
+            <option value="Finanças">Finanças &amp; Investimentos</option>
+            <option value="Consultoria">Consultoria &amp; B2B</option>
+            <option value="Outro">Outros Nichos</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Tabela de Leads -->
+      <section class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Data / Horário</th>
+              <th>Lead / Empresa</th>
+              <th>Contato Direto</th>
+              <th>Segmento / Nicho</th>
+              <th>Status Atual</th>
+              <th style="text-align: right;">Ações de Contato</th>
+            </tr>
+          </thead>
+          <tbody id="admin-leads-tbody">
+            <!-- Inserido dinamicamente via JS -->
+          </tbody>
+        </table>
+        
+        <div id="admin-empty-state" class="admin-empty-state" style="display:none;">
+          <h3>Nenhum lead encontrado</h3>
+          <p>Nenhuma solicitação corresponde aos filtros selecionados ou ainda não há novos cadastros.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Modal Adicionar Lead Manualmente -->
+<div id="admin-modal-newlead" class="admin-submodal" role="dialog" aria-modal="true" aria-label="Cadastrar Novo Lead">
+  <div class="admin-submodal-box">
+    <div class="admin-submodal-header">
+      <h3>Cadastrar Novo Lead Manualmente</h3>
+      <button id="admin-close-newlead" class="admin-btn-ghost" style="font-size: 18px; padding: 4px 8px;">✕</button>
+    </div>
+    <form id="admin-form-newlead" style="display: flex; flex-direction: column; gap: 14px;">
+      <div class="admin-form-group">
+        <label for="modal-lead-name">Nome do Cliente / Empresa *</label>
+        <input type="text" id="modal-lead-name" required="" placeholder="Ex: Dr. Roberto Guimarães ou ClinTech Solutions">
+      </div>
+      <div class="admin-form-group">
+        <label for="modal-lead-email">E-mail de Contato *</label>
+        <input type="email" id="modal-lead-email" required="" placeholder="contato@empresa.com">
+      </div>
+      <div class="admin-form-group">
+        <label for="modal-lead-phone">WhatsApp / Telefone com DDD *</label>
+        <input type="tel" id="modal-lead-phone" required="" placeholder="(41) 99999-9999">
+      </div>
+      <div class="admin-form-group">
+        <label for="modal-lead-segment">Segmento / Nicho</label>
+        <input type="text" id="modal-lead-segment" placeholder="Ex: Saúde &amp; Medicina ou E-commerce">
+      </div>
+      <div class="admin-form-group">
+        <label for="modal-lead-notes">Notas / Observações Iniciais</label>
+        <textarea id="modal-lead-notes" placeholder="Detalhes do projeto, urgência, necessidades levantadas..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" id="admin-cancel-newlead" class="admin-btn admin-btn-secondary">Cancelar</button>
+        <button type="submit" class="admin-btn admin-btn-primary">Salvar Lead</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de Edição de Anotações / Status do Lead -->
+<div id="admin-modal-edit" class="admin-submodal" role="dialog" aria-modal="true" aria-label="Detalhes e Anotações do Lead">
+  <div class="admin-submodal-box">
+    <div class="admin-submodal-header">
+      <h3 id="admin-edit-title">Detalhes do Lead</h3>
+      <button id="admin-close-edit" class="admin-btn-ghost" style="font-size: 18px; padding: 4px 8px;">✕</button>
+    </div>
+    <form id="admin-form-edit" style="display: flex; flex-direction: column; gap: 14px;">
+      <input type="hidden" id="edit-lead-id">
+      <div class="admin-form-group">
+        <label>Nome / Empresa</label>
+        <input type="text" id="edit-lead-name" readonly="" style="opacity: 0.8;">
+      </div>
+      <div class="admin-form-group">
+        <label for="edit-lead-status">Alterar Status</label>
+        <select id="edit-lead-status" class="admin-select">
+          <option value="novo">Novo Lead</option>
+          <option value="em_contato">Em Contato</option>
+          <option value="agendado">Diagnóstico Agendado</option>
+          <option value="proposta">Proposta Enviada</option>
+          <option value="convertido">Convertido / Fechado</option>
+          <option value="arquivado">Arquivado</option>
+        </select>
+      </div>
+      <div class="admin-form-group">
+        <label for="edit-lead-notes">Histórico &amp; Anotações Internas</label>
+        <textarea id="edit-lead-notes" placeholder="Anotações de reuniões, propostas, alinhamento técnico..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <button type="button" id="admin-delete-lead-btn" class="admin-btn admin-btn-danger">Excluir Lead</button>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" id="admin-cancel-edit" class="admin-btn admin-btn-secondary">Fechar</button>
+          <button type="submit" class="admin-btn admin-btn-primary">Salvar Alterações</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Feedback -->
+<div id="admin-toast" class="admin-toast" role="status">
+  <span id="admin-toast-icon">✓</span>
+  <span id="admin-toast-text">Ação executada com sucesso.</span>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>

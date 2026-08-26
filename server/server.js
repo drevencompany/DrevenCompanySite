@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
-const { handleContactForm, handleGetLeads } = require('./controllers/contact');
+const { handleContactForm, handleGetLeads, handleUpdateLead, handleDeleteLead } = require('./controllers/contact');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +31,8 @@ const contactLimiter = rateLimit({
 // Rotas da API
 app.post('/api/contact', contactLimiter, handleContactForm);
 app.get('/api/leads', handleGetLeads);
+app.put('/api/leads/:id', handleUpdateLead);
+app.delete('/api/leads/:id', handleDeleteLead);
 
 app.get('/api/health', (req, res) => {
   res.json({

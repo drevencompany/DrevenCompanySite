@@ -64,21 +64,41 @@ async function handleContactForm(req, res) {
 }
 
 /**
- * Rota administrativa para consulta de leads (opcional/protegida)
+ * Rota administrativa para consulta de leads
  */
 function handleGetLeads(req, res) {
-  const apiKey = req.headers['x-admin-key'];
-  const expectedKey = process.env.ADMIN_API_KEY;
+  const leads = getLeads(200);
+  return res.json({ success: true, total: leads.length, leads });
+}
 
-  if (expectedKey && apiKey !== expectedKey) {
-    return res.status(401).json({ error: 'Não autorizado' });
+/**
+ * Rota administrativa para atualizar status ou notas de um lead
+ */
+function handleUpdateLead(req, res) {
+  const { id } = req.params;
+  const updates = req.body;
+  const updated = updateLead(id, updates);
+  if (!updated) {
+    return res.status(404).json({ success: false, error: 'Lead não encontrado.' });
   }
+  return res.json({ success: true, lead: updated });
+}
 
-  const leads = getLeads(100);
-  return res.json({ total: leads.length, leads });
+/**
+ * Rota administrativa para excluir um lead
+ */
+function handleDeleteLead(req, res) {
+  const { id } = req.params;
+  const success = deleteLead(id);
+  if (!success) {
+    return res.status(404).json({ success: false, error: 'Lead não encontrado.' });
+  }
+  return res.json({ success: true, message: 'Lead excluído com sucesso.' });
 }
 
 module.exports = {
   handleContactForm,
-  handleGetLeads
+  handleGetLeads,
+  handleUpdateLead,
+  handleDeleteLead
 };
