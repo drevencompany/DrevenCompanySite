@@ -20,3 +20,5 @@ yarn-error.log*
 # Arquivos de Sistema Operacional
 .DS_Store
 Thumbs.db
+
+.vercel

@@ -1522,12 +1522,20 @@ nav .util {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.85);
-  font: 400 13.5px "Poppins", "Archivo", sans-serif;
+  font: 400 14px "Poppins", "Archivo", sans-serif;
   color: var(--ink);
   transition: all 0.25s var(--ease-apple);
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+  #signup input,
+  #signup select {
+    font-size: 16px !important; /* Previne auto-zoom indesejado no iOS Safari */
+  }
 }
 
 .select-wrap {
