@@ -2743,19 +2743,9 @@ html.admin-locked, body.admin-locked {
 }
 
 /* ── Reversão de Risco (Hero & Form) ────────────────────────────── */
-.hero-cta-wrap {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
 
-.hero-risk {
-  font: 400 12px/1.3 "Poppins", "Archivo", sans-serif;
-  color: var(--silver);
-  letter-spacing: -0.01em;
-  opacity: 0.9;
-}
+
+
 
 .form-risk {
   font: 400 12px/1.3 "Poppins", "Archivo", sans-serif;
@@ -2766,14 +2756,8 @@ html.admin-locked, body.admin-locked {
 }
 
 @media (max-width: 768px) {
-  .hero-cta-wrap {
-    width: 100%;
-    align-items: center;
-    text-align: center;
-  }
-  .hero-risk {
-    text-align: center;
-  }
+  
+  
 }
 
 
