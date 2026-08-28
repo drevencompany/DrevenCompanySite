@@ -23,7 +23,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { name, email, phone, segment, hp } = req.body || {};
+    let parsedBody = req.body;
+    if (typeof parsedBody === 'string') {
+      try { parsedBody = JSON.parse(parsedBody); } catch (e) { parsedBody = {}; }
+    }
+    const { name, email, phone, segment, hp } = parsedBody || {};
 
     if (hp) {
       return res.status(200).json({ success: true, message: 'Processado com sucesso.' });
