@@ -1,6 +1,7 @@
 # Segredos e Variáveis de Ambiente
 .env
 .env.*
+!.env.example
 .env.local
 .mcp.json
 

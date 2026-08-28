@@ -149,7 +149,7 @@ Contato: ${nome} (${cargo}) · ${whatsapp} · ${email}`;
       const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
       const port = parseInt(process.env.SMTP_PORT || '465', 10);
       const user = process.env.SMTP_USER || 'contato@dreven.company';
-      const pass = process.env.SMTP_PASS || 'Daniel1010@com';
+      const pass = process.env.SMTP_PASS || '';
       const secure = process.env.SMTP_SECURE === 'true' || port === 465;
 
       if (pass) {
