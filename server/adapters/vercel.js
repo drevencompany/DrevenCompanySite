@@ -1,7 +1,10 @@
+const nodemailer = require('nodemailer');
 const { loadConfig } = require('../core/config');
 const { createGistRepository } = require('./gist-repository');
+const { createMailService } = require('../core/mail-service');
 
 let sharedRepo = null;
+let sharedMailer = null;
 
 function getSharedRepository() {
   if (sharedRepo) return sharedRepo;
@@ -12,9 +15,35 @@ function getSharedRepository() {
       gistId: config.githubGistId
     });
     return sharedRepo;
-  } catch (err) {
-    // If config fails to load, create a fallback repo instance that fails closed
+  } catch {
     return createGistRepository({ token: '', gistId: '' });
+  }
+}
+
+function getSharedMailer() {
+  if (sharedMailer) return sharedMailer;
+  try {
+    const config = loadConfig(process.env);
+    let transport = null;
+    if (config.smtp && config.smtp.pass) {
+      transport = nodemailer.createTransport({
+        host: config.smtp.host,
+        port: config.smtp.port,
+        secure: config.smtp.secure,
+        auth: {
+          user: config.smtp.user,
+          pass: config.smtp.pass
+        }
+      });
+    }
+    sharedMailer = createMailService({
+      transport,
+      fromAddress: config.smtp ? config.smtp.user : 'contato@dreven.company',
+      adminEmail: 'contato@dreven.company'
+    });
+    return sharedMailer;
+  } catch {
+    return createMailService({ transport: null });
   }
 }
 
@@ -32,5 +61,6 @@ function parseRequestBody(req) {
 
 module.exports = {
   getSharedRepository,
+  getSharedMailer,
   parseRequestBody
 };
