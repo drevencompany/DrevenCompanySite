@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('node:path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const express = require('express');
@@ -7,17 +7,27 @@ const rateLimit = require('express-rate-limit');
 
 const { handleContactForm, handleGetLeads, handleUpdateLead, handleDeleteLead } = require('./controllers/contact');
 const { handleBriefingSubmit, handleGetBriefings, handleDeleteBriefing } = require('./controllers/briefing');
+const { expressAdminAuth } = require('./middleware/admin-auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ROOT_DIR = path.join(__dirname, '..');
+
+// Headers globais de segurança
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
 
 // Middlewares essenciais
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiter para proteger o endpoint de envio contra spam/abuso
+// Rate limiter para rotas públicas
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 15, // máximo de 15 envios por IP
@@ -28,8 +38,6 @@ const contactLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
-
-const { expressAdminAuth } = require('./middleware/admin-auth');
 
 // Rotas de Autenticação Administrativa
 app.get('/api/auth/login', require('../api/auth/login'));
@@ -62,11 +70,25 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Servir arquivos estáticos do frontend (HTML, CSS, JS, Assets)
-app.use(express.static(ROOT_DIR));
+// Servir páginas e arquivos estáticos públicos explicitamente
+app.get('/diagnostico', (req, res) => res.sendFile(path.join(ROOT_DIR, 'diagnostico.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(ROOT_DIR, 'admin.html')));
 
-// Fallback para SPA / index.html
-app.get('*', (req, res) => {
+const PUBLIC_FILES = [
+  'index.html', 'styles.css', 'script.js',
+  'diagnostico.html', 'diagnostico.css', 'diagnostico.js',
+  'admin.html', 'admin.css', 'admin.js',
+  'favicon.ico', 'robots.txt'
+];
+
+PUBLIC_FILES.forEach(filename => {
+  app.get(`/${filename}`, (req, res) => res.sendFile(path.join(ROOT_DIR, filename)));
+});
+
+app.use('/assets', express.static(path.join(ROOT_DIR, 'assets')));
+
+// Fallback SPA
+app.get('/', (req, res) => {
   res.sendFile(path.join(ROOT_DIR, 'index.html'));
 });
 
@@ -75,7 +97,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('====================================================');
   console.log('  DREVEN COMPANY — Servidor Backend Online');
   console.log(`  Local: http://localhost:${PORT}`);
-  console.log(`  Rede Wi-Fi: http://192.168.15.11:${PORT}`);
   console.log(`  Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log('====================================================');
 });
