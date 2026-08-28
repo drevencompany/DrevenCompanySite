@@ -1,7 +1,7 @@
 const db = require('./lib/db');
 const nodemailer = require('nodemailer');
 
-const EMAIL_REGEX = /^[^s@]+@[^s@]+.[^s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
