@@ -544,3 +544,21 @@ body {
   color: var(--text-dim);
   max-width: 420px;
 }
+
+/* ── Prevenção de Zoom Indesejado no iOS Safari ──────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="password"],
+textarea,
+select {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+  .diag-text-input,
+  .diag-textarea {
+    font-size: 16px !important;
+  }
+}

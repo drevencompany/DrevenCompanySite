@@ -1,7 +1,7 @@
 const db = require('./lib/db');
 const nodemailer = require('nodemailer');
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^s@]+@[^s@]+.[^s@]+$/;
 
 module.exports = async function handler(req, res) {
   // Cabeçalhos de Segurança e CORS
@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
     if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim()) || email.length > 120) {
       return res.status(400).json({
         success: false,
-        error: 'Por favor, informe um endereço de e-mail corporativo válido.'
+        error: 'Por favor, informe um endereço de e-mail válido.'
       });
     }
 
@@ -54,6 +54,27 @@ module.exports = async function handler(req, res) {
     const rawPhoneDigits = cleanPhone.replace(/\D/g, '');
     const wppLink = rawPhoneDigits ? `https://wa.me/${rawPhoneDigits.startsWith('55') ? rawPhoneDigits : '55' + rawPhoneDigits}` : '#';
 
+    // 1. SALVAR IMEDIATAMENTE NO BANCO DE DADOS EM NUVEM PERSISTENTE
+    const newLead = {
+      id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      segment: cleanSegment,
+      source: 'Formulário do Site',
+      status: 'novo',
+      notes: '',
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await db.saveLead(newLead);
+      console.log('[Lead Cloud Saved]:', newLead.id, cleanName);
+    } catch (saveErr) {
+      console.error('[DB Cloud Save Lead Error]:', saveErr);
+    }
+
+    // 2. DISPARAR NOTIFICAÇÕES POR E-MAIL
     const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
     const port = parseInt(process.env.SMTP_PORT || '465', 10);
     const user = process.env.SMTP_USER || 'contato@dreven.company';
@@ -61,10 +82,11 @@ module.exports = async function handler(req, res) {
     const secure = process.env.SMTP_SECURE === 'true' || port === 465;
 
     if (!pass) {
-      console.warn('[Vercel Mailer Warning] SMTP_PASS não configurado nas Environment Variables da Vercel.');
+      console.warn('[Vercel Mailer Warning] SMTP_PASS não configurado.');
       return res.status(200).json({
         success: true,
-        message: 'Recebemos seu contato com sucesso. Entraremos em contato com brevidade.'
+        message: 'Recebemos seu contato com sucesso. Entraremos em contato com brevidade.',
+        lead: newLead
       });
     }
 
@@ -81,14 +103,14 @@ module.exports = async function handler(req, res) {
       timeStyle: 'medium'
     });
 
-    // 1. Notificação para Dreven Company
+    // Notificação para a Dreven Company
     const adminHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#F4F2F3; padding:30px; color:#090809;">
         <div style="max-width:560px; margin:0 auto; background:#fff; border:1px solid #E1E1E1; border-radius:6px; padding:30px; box-shadow: 0 4px 20px rgba(9,8,9,0.05);">
           <div style="font-weight:800; letter-spacing:0.22em; font-size:16px; margin-bottom:16px; text-transform: uppercase;">DREVEN CO.</div>
-          <div style="display:inline-block; background:#090809; color:#F4F2F3; font-size:10px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; padding:5px 10px; border-radius:3px; margin-bottom:14px;">Novo Lead · Diagnóstico</div>
+          <div style="display:inline-block; background:#090809; color:#F4F2F3; font-size:10px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; padding:5px 10px; border-radius:3px; margin-bottom:14px;">Novo Lead · Rodapé do Site</div>
           <h2 style="margin:0 0 14px; font-size: 20px; font-weight: 800;">Solicitação de Contato Recebida</h2>
-          <p style="font-size:14px; color:#656565; line-height: 1.6;">Um novo visitante solicitou início de conversa através do portal oficial.</p>
+          <p style="font-size:14px; color:#656565; line-height: 1.6;">Um novo visitante solicitou início de conversa através do formulário principal.</p>
           <div style="background:#F4F2F3; padding:18px; border-radius:4px; margin:18px 0; font-size:14px;">
             <p style="margin:0 0 8px;"><strong>Nome:</strong> ${cleanName}</p>
             <p style="margin:0 0 8px;"><strong>E-mail:</strong> <a href="mailto:${cleanEmail}" style="color:#090809;">${cleanEmail}</a></p>
@@ -107,26 +129,19 @@ module.exports = async function handler(req, res) {
       </div>
     `;
 
-    await transporter.sendMail({
-      from: `"Dreven Company" <${user}>`,
-      to: 'contato@dreven.company',
-      subject: `[Novo Lead] ${cleanName} — Diagnóstico Solicitado`,
-      html: adminHtml
-    });
-
-    // 2. Confirmação para o cliente com assinatura oficial
+    // Confirmação para o cliente
     const clientHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#F4F2F3; padding:30px; color:#090809;">
         <div style="max-width:560px; margin:0 auto; background:#fff; border:1px solid #E1E1E1; border-radius:6px; padding:36px; box-shadow: 0 4px 20px rgba(9,8,9,0.05);">
           <div style="font-weight:800; letter-spacing:0.24em; font-size:18px; margin-bottom:20px; text-transform: uppercase;">DREVEN CO.</div>
           <h2 style="margin:0 0 16px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Olá, ${cleanName}.</h2>
-          <p style="font-size:14.5px; line-height:1.7; color:#383536;">Confirmamos o recebimento da sua solicitação de contato através do portal oficial da <strong>Dreven Company</strong>.</p>
-          <p style="font-size:14.5px; line-height:1.7; color:#383536;">Analisamos cada caso com rigor técnico e leitura precisa de cenário. Em breve, entraremos em contato diretamente com você para alinhar o diagnóstico e estruturar a proposta sob medida para a sua operação.</p>
+          <p style="font-size:14.5px; line-height:1.7; color:#383536;">Confirmamos o recebimento da sua mensagem através do site oficial da <strong>Dreven Company</strong>.</p>
+          <p style="font-size:14.5px; line-height:1.7; color:#383536;">Analisamos cada solicitação minuciosamente para compreender a sua necessidade. Em breve, entraremos em contato diretamente com você pelo WhatsApp ou e-mail.</p>
           <div style="background:#F4F2F3; border-left:2px solid #090809; padding:16px; border-radius:4px; margin:22px 0; font-size:13.5px; color: #090809; font-weight: 500;">
             “Não vendemos serviços genéricos. Construímos o que usaríamos nós mesmos, com o padrão que usaríamos para nós mesmos.”
           </div>
           <div style="text-align:center; margin-top:24px; padding-top:20px; border-top:1px solid #E1E1E1;">
-            <p style="font-size:13px; color:#656565; margin:0 0 10px;">Caso tenha urgência ou queira adiantar detalhes, você também pode falar diretamente conosco:</p>
+            <p style="font-size:13px; color:#656565; margin:0 0 10px;">Caso tenha urgência ou queira falar diretamente conosco:</p>
             <a href="https://wa.me/5541920046931" style="display:inline-block; background:#090809; color:#F4F2F3; padding:12px 24px; font-size:11px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; text-decoration:none; border-radius:3px;">Falar pelo WhatsApp Oficial</a>
           </div>
           <div style="margin-top:32px; padding-top:22px; border-top:1px solid #E1E1E1; font-size:13px; color:#656565; line-height: 1.6;">
@@ -144,17 +159,25 @@ module.exports = async function handler(req, res) {
 
     await transporter.sendMail({
       from: `"Dreven Company" <${user}>`,
+      to: 'contato@dreven.company',
+      subject: `[Novo Lead] ${cleanName} — Contato via Site`,
+      html: adminHtml
+    });
+
+    await transporter.sendMail({
+      from: `"Dreven Company" <${user}>`,
       to: cleanEmail,
-      subject: `Recebemos sua solicitação — Dreven Company`,
+      subject: `Recebemos sua mensagem — Dreven Company`,
       html: clientHtml
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Recebemos seu contato com sucesso. Entraremos em contato com brevidade.'
+      message: 'Recebemos seu contato com sucesso. Entraremos em contato com brevidade.',
+      lead: newLead
     });
   } catch (err) {
-    console.error('[Serverless Mailer Error]:', err);
+    console.error('[Serverless Contact Error]:', err);
     return res.status(500).json({
       success: false,
       error: 'Erro ao processar envio. Por favor, utilize o WhatsApp direto.'

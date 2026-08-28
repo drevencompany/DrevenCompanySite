@@ -1,5 +1,6 @@
 /**
- * Dreven Company — Diagnóstico Estratégico (Plano v2)
+ * Dreven Company — Diagnóstico Estratégico
+ * Fluxo Multi-Step, Validações e Submissão
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -9,11 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function calculateLinha(gargalo) {
     if (!gargalo) return 'Linha 1 · Presença Digital';
-    if (gargalo.includes('Conversão') || gargalo.includes('presença')) return 'Linha 1 · Presença Digital';
-    if (gargalo.includes('sistema dedicado') || gargalo.includes('plataforma')) return 'Linha 2 · Produto Digital (Web App/Portal)';
+    if (gargalo.includes('Conversão') || gargalo.includes('presença') || gargalo.includes('Linha 1')) return 'Linha 1 · Presença Digital';
+    if (gargalo.includes('sistema dedicado') || gargalo.includes('plataforma') || gargalo.includes('Web App') || gargalo.includes('Linha 2')) return 'Linha 2 · Produto Digital (Web App/Portal)';
     if (gargalo.includes('Processos manuais') || gargalo.includes('repetitivos')) return 'Linha 2 / 3 · Sistemas & Automações';
-    if (gargalo.includes('desconectados') || gargalo.includes('dados')) return 'Linha 3 · Integrações & Engenharia';
-    if (gargalo.includes('IA') || gargalo.includes('Inteligência Artificial')) return 'Linha 3 · Motores de Regras & IA';
+    if (gargalo.includes('desconectados') || gargalo.includes('dados') || gargalo.includes('Integrações')) return 'Linha 3 · Integrações & Engenharia';
+    if (gargalo.includes('IA') || gargalo.includes('Inteligência Artificial') || gargalo.includes('Motores')) return 'Linha 3 · Motores de Regras & IA';
     return 'Linha 1 · Presença Digital';
   }
   
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const state = {
     empresa: '',
     segmento: '',
+    segmento_outro: '',
     momento: '',
     gargalo_principal: '',
     linha_sugerida: '',
@@ -37,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     contato_cargo: '',
     contato_whatsapp: '',
     contato_email: '',
-    consentimento_lgpd: true,
+    consentimento_lgpd: false,
     consentimento_lgpd_em: ''
   };
 
@@ -53,17 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnBack = document.getElementById('btn-back');
   const actionsBar = document.getElementById('actions-bar');
   const errorMsg = document.getElementById('diag-error');
+  
+  const segmentOtherBox = document.getElementById('segment-other-box');
+  const inputSegmentOther = document.getElementById('input-segment-other');
+  
   const referralBox = document.getElementById('referral-box');
   const inputReferrer = document.getElementById('input-referrer');
-
-  // Recuperar rascunho anterior se houver
-  const savedState = localStorage.getItem('dreven_diag_draft');
-  if (savedState) {
-    try {
-      const parsed = JSON.parse(savedState);
-      Object.assign(state, parsed);
-    } catch (e) {}
-  }
 
   // Inicializar listeners
   if (btnStart) {
@@ -113,35 +110,54 @@ document.addEventListener('DOMContentLoaded', () => {
           container.querySelectorAll('.diag-opt').forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
           
-          if (field === 'segment') state.segmento = btn.dataset.value;
+          if (field === 'segment') {
+            if (btn.dataset.value === 'Outro') {
+              state.segmento = 'Outro';
+              if (segmentOtherBox) {
+                segmentOtherBox.style.display = 'block';
+                if (inputSegmentOther) inputSegmentOther.focus();
+              }
+              hideError();
+              return; // Permite preencher o texto sem avançar automaticamente
+            } else {
+              state.segmento = btn.dataset.value;
+              state.segmento_outro = '';
+              if (segmentOtherBox) segmentOtherBox.style.display = 'none';
+            }
+          }
+
           if (field === 'moment') state.momento = btn.dataset.value;
+          
           if (field === 'bottleneck') {
             state.gargalo_principal = btn.dataset.value;
             state.linha_sugerida = calculateLinha(btn.dataset.value);
           }
+
           if (field === 'frequency') state.frequencia = btn.dataset.value;
           if (field === 'impact') state.impacto = btn.dataset.value;
           if (field === 'previous_attempts') state.tentativas_anteriores = btn.dataset.value;
           if (field === 'decision_makers') state.estrutura_decisoria = btn.dataset.value;
           if (field === 'timeline') state.prazo_esperado = btn.dataset.value;
+          
           if (field === 'channel') {
             state.canal_origem = btn.dataset.value;
             if (btn.dataset.value === 'Indicação') {
-              referralBox.style.display = 'block';
-              inputReferrer.focus();
-              saveDraft();
+              if (referralBox) {
+                referralBox.style.display = 'block';
+                if (inputReferrer) inputReferrer.focus();
+              }
               hideError();
-              return;
+              return; // Permite preencher quem indicou sem avançar automaticamente
             } else {
-              referralBox.style.display = 'none';
+              if (referralBox) referralBox.style.display = 'none';
               state.indicado_por = '';
             }
           }
 
-          saveDraft();
           hideError();
 
           setTimeout(() => {
+            if (currentStep === 2 && state.segmento === 'Outro') return;
             if (currentStep === 12 && state.canal_origem === 'Indicação') return;
             handleNext();
           }, 200);
@@ -156,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
           btn.classList.toggle('selected');
           const selectedValues = Array.from(container.querySelectorAll('.diag-opt.selected')).map(b => b.dataset.value);
           state.ferramentas_atuais = selectedValues;
-          saveDraft();
           hideError();
         });
       });
@@ -166,28 +181,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function initFormInputs() {
     const inputCompany = document.getElementById('input-company');
     if (inputCompany) {
-      if (state.empresa) inputCompany.value = state.empresa;
-      inputCompany.addEventListener('input', (e) => {
-        state.empresa = e.target.value;
-        saveDraft();
-      });
+      inputCompany.addEventListener('input', (e) => { state.empresa = e.target.value; });
+    }
+
+    if (inputSegmentOther) {
+      inputSegmentOther.addEventListener('input', (e) => { state.segmento_outro = e.target.value; });
     }
 
     const inputProcess = document.getElementById('input-process-desc');
     if (inputProcess) {
-      if (state.descricao_livre) inputProcess.value = state.descricao_livre;
-      inputProcess.addEventListener('input', (e) => {
-        state.descricao_livre = e.target.value;
-        saveDraft();
-      });
+      inputProcess.addEventListener('input', (e) => { state.descricao_livre = e.target.value; });
     }
 
     if (inputReferrer) {
-      if (state.indicado_por) inputReferrer.value = state.indicado_por;
-      inputReferrer.addEventListener('input', (e) => {
-        state.indicado_por = e.target.value;
-        saveDraft();
-      });
+      inputReferrer.addEventListener('input', (e) => { state.indicado_por = e.target.value; });
     }
 
     const inputName = document.getElementById('input-name');
@@ -196,27 +203,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputEmail = document.getElementById('input-email');
 
     if (inputName) {
-      if (state.contato_nome) inputName.value = state.contato_nome;
-      inputName.addEventListener('input', (e) => { state.contato_nome = e.target.value; saveDraft(); });
+      inputName.addEventListener('input', (e) => { state.contato_nome = e.target.value; });
     }
     if (inputRole) {
-      if (state.contato_cargo) inputRole.value = state.contato_cargo;
-      inputRole.addEventListener('input', (e) => { state.contato_cargo = e.target.value; saveDraft(); });
+      inputRole.addEventListener('input', (e) => { state.contato_cargo = e.target.value; });
     }
     if (inputPhone) {
-      if (state.contato_whatsapp) inputPhone.value = state.contato_whatsapp;
-      inputPhone.addEventListener('input', (e) => { state.contato_whatsapp = e.target.value; saveDraft(); });
+      inputPhone.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.length > 11) v = v.slice(0, 11);
+        if (v.length > 6) {
+          e.target.value = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+        } else if (v.length > 2) {
+          e.target.value = `(${v.slice(0, 2)}) ${v.slice(2)}`;
+        } else if (v.length > 0) {
+          e.target.value = `(${v}`;
+        }
+        state.contato_whatsapp = e.target.value;
+      });
     }
     if (inputEmail) {
-      if (state.contato_email) inputEmail.value = state.contato_email;
-      inputEmail.addEventListener('input', (e) => { state.contato_email = e.target.value; saveDraft(); });
+      inputEmail.addEventListener('input', (e) => { state.contato_email = e.target.value; });
     }
 
     const consentEl = document.getElementById('consent-check');
     if (consentEl) {
+      consentEl.checked = false;
+      state.consentimento_lgpd = false;
       consentEl.addEventListener('change', (e) => {
         state.consentimento_lgpd = e.target.checked;
-        state.consentimento_lgpd_em = new Date().toISOString();
+        state.consentimento_lgpd_em = e.target.checked ? new Date().toISOString() : '';
+        if (e.target.checked) hideError();
       });
     }
   }
@@ -259,6 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (step === 2) {
       if (!state.segmento) {
         showError('Selecione o segmento principal de atuação.');
+        return false;
+      }
+      if (state.segmento === 'Outro' && (!state.segmento_outro || state.segmento_outro.trim().length < 2)) {
+        showError('Por favor, digite qual é o seu segmento de atuação.');
+        if (inputSegmentOther) inputSegmentOther.focus();
         return false;
       }
     } else if (step === 3) {
@@ -313,13 +335,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
       }
       if (state.canal_origem === 'Indicação' && (!state.indicado_por || state.indicado_por.trim().length < 2)) {
-        showError('Por favor, informe quem indicou você para a Dreven.');
-        inputReferrer.focus();
+        showError('Por favor, informe quem indicou você para o Dreven.');
+        if (inputReferrer) inputReferrer.focus();
         return false;
       }
     } else if (step === 13) {
       if (!state.contato_nome || state.contato_nome.trim().length < 3) {
-        showError('Por favor, informe o nome do decisor.');
+        showError('Por favor, informe seu nome completo.');
         document.getElementById('input-name').focus();
         return false;
       }
@@ -330,12 +352,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!state.contato_email || !emailRegex.test(state.contato_email.trim())) {
-        showError('Por favor, informe um e-mail corporativo válido.');
+        showError('Por favor, informe um endereço de e-mail válido.');
         document.getElementById('input-email').focus();
         return false;
       }
       if (!state.consentimento_lgpd) {
-        showError('É obrigatório concordar com o tratamento dos dados (LGPD) para enviar.');
+        showError('Por favor, marque a caixa de concordância com o tratamento dos dados (LGPD) para prosseguir.');
         return false;
       }
     }
@@ -351,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const s = parseInt(sec.dataset.step, 10);
       if (s === currentStep) {
         sec.classList.add('active');
-        const input = sec.querySelector('input, textarea');
+        const input = sec.querySelector('input:not([type="checkbox"]), textarea');
         if (input && window.innerWidth > 768) {
           setTimeout(() => input.focus(), 120);
         }
@@ -385,12 +407,16 @@ document.addEventListener('DOMContentLoaded', () => {
     state.consentimento_lgpd_em = new Date().toISOString();
     state.linha_sugerida = calculateLinha(state.gargalo_principal);
 
+    const finalSegment = state.segmento === 'Outro' && state.segmento_outro.trim()
+      ? `Outro: ${state.segmento_outro.trim()}`
+      : state.segmento;
+
     const briefingRecord = {
       id: `briefing_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       ...state,
-      // Aliases para compatibilidade
+      segmento: finalSegment,
+      segment: finalSegment,
       company: state.empresa,
-      segment: state.segmento,
       name: state.contato_nome,
       phone: state.contato_whatsapp,
       email: state.contato_email,
@@ -400,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: new Date().toISOString()
     };
 
-    // Salva localmente garantindo persistência imediata para o painel admin
+    // Salva localmente garantindo persistência imediata
     try {
       const stored = localStorage.getItem('dreven_admin_briefings');
       const briefings = stored ? JSON.parse(stored) : [];
@@ -409,33 +435,21 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
 
     try {
-      const response = await fetch('/api/diagnostico', {
+      await fetch('/api/diagnostico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(briefingRecord)
       });
-
-      localStorage.removeItem('dreven_diag_draft');
-
+    } catch (err) {
+      console.error('Erro na submissão:', err);
+    } finally {
       document.querySelectorAll('.diag-step').forEach(s => s.classList.remove('active'));
       document.getElementById('success-screen').classList.add('active');
       actionsBar.style.display = 'none';
       progressInfoWrap.style.display = 'none';
       progressBarWrap.style.display = 'none';
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      console.error('Erro na submissão:', err);
-      // Sucesso com persistência local garantida
-      document.querySelectorAll('.diag-step').forEach(s => s.classList.remove('active'));
-      document.getElementById('success-screen').classList.add('active');
-      actionsBar.style.display = 'none';
-      progressInfoWrap.style.display = 'none';
-      progressBarWrap.style.display = 'none';
     }
-  }
-
-  function saveDraft() {
-    localStorage.setItem('dreven_diag_draft', JSON.stringify(state));
   }
 
   function showError(msg) {

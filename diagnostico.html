@@ -86,7 +86,13 @@
             <button type="button" class="diag-opt" data-value="Jurídico & Finanças"><span>Jurídico &amp; Finanças</span></button>
             <button type="button" class="diag-opt" data-value="E-commerce"><span>E-commerce</span></button>
             <button type="button" class="diag-opt" data-value="Indústria"><span>Indústria</span></button>
-            <button type="button" class="diag-opt" data-value="Outro"><span>Outro</span></button>
+            <button type="button" class="diag-opt" data-value="Outro" id="opt-segment-other"><span>Outro</span></button>
+          </div>
+
+          <!-- Campo Condicional para Outro Segmento -->
+          <div class="diag-conditional-box" id="segment-other-box" style="display: none; margin-top: 16px;">
+            <label class="diag-field-lbl" for="input-segment-other">Qual é o seu segmento de atuação?</label>
+            <input type="text" id="input-segment-other" class="diag-text-input" placeholder="Digite seu segmento ou nicho">
           </div>
         </section>
 
@@ -285,12 +291,12 @@
             </div>
 
             <div class="diag-form-row">
-              <label class="diag-field-lbl" for="input-email">E-mail corporativo</label>
-              <input type="email" id="input-email" class="diag-text-input" placeholder="seuemail@empresa.com" required autocomplete="email">
+              <label class="diag-field-lbl" for="input-email">E-mail de contato</label>
+              <input type="email" id="input-email" class="diag-text-input" placeholder="seuemail@exemplo.com" required autocomplete="email">
             </div>
 
             <label class="diag-consent-label">
-              <input type="checkbox" id="consent-check" checked required>
+              <input type="checkbox" id="consent-check" required>
               <span>Concordo com o tratamento dos dados para elaboração do diagnóstico técnico (LGPD).</span>
             </label>
           </div>
