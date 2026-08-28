@@ -339,14 +339,16 @@
     const STORAGE_KEY = 'dreven_admin_leads';
     const BRIEFINGS_STORAGE_KEY = 'dreven_admin_briefings';
     const AUTH_KEY = 'dreven_admin_logged';
-    let currentTab = 'briefings'; // Abre prioritariamente em Diagnósticos & Briefings
+    
+    // Estado do Dashboard
+    let currentTab = 'briefings'; // 'briefings' ou 'leads'
     let currentBriefingData = null;
 
+    // Métodos de Armazenamento Local
     function getLocalLeads() {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        let leads = stored ? JSON.parse(stored) : [];
-        return Array.isArray(leads) ? leads : [];
+        return stored ? JSON.parse(stored) : [];
       } catch (err) {
         return [];
       }
@@ -354,15 +356,14 @@
 
     function setLocalLeads(leads) {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(leads || []));
       } catch (err) {}
     }
 
     function getLocalBriefings() {
       try {
         const stored = localStorage.getItem(BRIEFINGS_STORAGE_KEY);
-        let briefings = stored ? JSON.parse(stored) : [];
-        return Array.isArray(briefings) ? briefings : [];
+        return stored ? JSON.parse(stored) : [];
       } catch (err) {
         return [];
       }
@@ -370,7 +371,7 @@
 
     function setLocalBriefings(briefings) {
       try {
-        localStorage.setItem(BRIEFINGS_STORAGE_KEY, JSON.stringify(briefings));
+        localStorage.setItem(BRIEFINGS_STORAGE_KEY, JSON.stringify(briefings || []));
       } catch (err) {}
     }
 
@@ -378,14 +379,14 @@
       const leads = getLocalLeads();
       leads.unshift(lead);
       setLocalLeads(leads);
-      if (isLoggedIn()) render();
+      render();
     }
 
     function saveBriefingLocal(briefing) {
       const briefings = getLocalBriefings();
       briefings.unshift(briefing);
       setLocalBriefings(briefings);
-      if (isLoggedIn()) render();
+      render();
     }
 
     function isLoggedIn() {
@@ -419,6 +420,15 @@
       if (overlay) overlay.classList.add('open');
       if (floating) floating.style.display = 'none';
       lockScroll(true);
+      
+      // Reseta filtros ao abrir para não filtrar dados sem querer
+      const searchInput = document.getElementById('admin-search-input');
+      const filterStatus = document.getElementById('admin-filter-status');
+      const filterSegment = document.getElementById('admin-filter-segment');
+      if (searchInput) searchInput.value = '';
+      if (filterStatus) filterStatus.value = 'todos';
+      if (filterSegment) filterSegment.value = 'todos';
+
       render();
       syncWithServer();
     }
@@ -447,34 +457,33 @@
       showToast('Sessão encerrada.', 'ℹ');
     }
 
+    // Sincronização Bidirecional com a Nuvem
     async function syncWithServer() {
-      // 1. Sincronizar Briefings da Nuvem Persistente
       try {
-        const resB = await fetch('/api/diagnostico');
-        if (resB.ok) {
+        // Busca Diagnósticos e Leads em paralelo
+        const [resB, resL] = await Promise.all([
+          fetch('/api/diagnostico').catch(() => null),
+          fetch('/api/leads').catch(() => null)
+        ]);
+
+        if (resB && resB.ok) {
           const dataB = await resB.json();
-          if (dataB.success && Array.isArray(dataB.briefings) && dataB.briefings.length > 0) {
+          if (dataB.success && Array.isArray(dataB.briefings)) {
             setLocalBriefings(dataB.briefings);
           }
         }
-      } catch (err) {
-        console.error('Erro ao sincronizar briefings:', err);
-      }
 
-      // 2. Sincronizar Leads da Nuvem Persistente
-      try {
-        const resL = await fetch('/api/leads');
-        if (resL.ok) {
+        if (resL && resL.ok) {
           const dataL = await resL.json();
-          if (dataL.success && Array.isArray(dataL.leads) && dataL.leads.length > 0) {
+          if (dataL.success && Array.isArray(dataL.leads)) {
             setLocalLeads(dataL.leads);
           }
         }
       } catch (err) {
-        console.error('Erro ao sincronizar leads:', err);
+        console.error('Erro na sincronização:', err);
+      } finally {
+        render();
       }
-
-      render();
     }
 
     function renderKPIs(leads, briefings) {
@@ -485,6 +494,7 @@
       const tabLeadsCount = document.getElementById('count-leads-tab');
       const tabBriefingsCount = document.getElementById('count-briefings-tab');
 
+      // Atualiza contadores nas abas
       if (tabLeadsCount) tabLeadsCount.textContent = leads.length;
       if (tabBriefingsCount) tabBriefingsCount.textContent = briefings.length;
 
@@ -500,10 +510,23 @@
       if (newEl) newEl.textContent = novos;
       if (contactEl) contactEl.textContent = emContato;
       if (wonEl) wonEl.textContent = convertidos;
+
+      // Atualiza rótulos dos KPIs conforme a aba
+      const totalLbl = document.querySelector('.kpi-total .kpi-label');
+      const newLbl = document.querySelector('.kpi-new .kpi-label');
+      if (totalLbl && newLbl) {
+        if (currentTab === 'leads') {
+          totalLbl.textContent = 'Total de Leads';
+          newLbl.textContent = 'Novos / Pendentes';
+        } else {
+          totalLbl.textContent = 'Total de Diagnósticos';
+          newLbl.textContent = 'Aguardando Leitura';
+        }
+      }
     }
 
     function renderTable() {
-      const tbody = document.getElementById('admin-table-body');
+      const tbody = document.getElementById('admin-table-body') || document.getElementById('admin-leads-tbody') || document.querySelector('.admin-table tbody');
       const thead = document.querySelector('.admin-table thead tr');
       const emptyState = document.getElementById('admin-empty-state');
       const searchInput = document.getElementById('admin-search-input');
@@ -516,7 +539,7 @@
       const briefings = getLocalBriefings();
       renderKPIs(leads, briefings);
 
-      // Sincronizar classes ativas dos botões de aba
+      // Sincroniza classes dos botões das abas
       const tabLeads = document.getElementById('tab-leads-btn');
       const tabBriefings = document.getElementById('tab-briefings-btn');
       if (tabLeads && tabBriefings) {
@@ -534,7 +557,7 @@
       const statusFilter = filterStatus ? filterStatus.value : 'todos';
       const segmentFilter = filterSegment ? filterSegment.value : 'todos';
 
-      // Atualizar Cabeçalho da Tabela
+      // Atualiza Cabeçalho da Tabela
       if (thead) {
         if (currentTab === 'leads') {
           thead.innerHTML = `
@@ -578,7 +601,15 @@
       tbody.innerHTML = '';
 
       if (filtered.length === 0) {
-        if (emptyState) emptyState.style.display = 'block';
+        if (emptyState) {
+          emptyState.style.display = 'block';
+          emptyState.innerHTML = `
+            <p style="font-size:14.5px; color:rgba(244,242,243,0.7); margin-bottom:12px;">Nenhum registro encontrado nesta aba.</p>
+            <button type="button" id="empty-sync-btn" class="admin-btn admin-btn-secondary" style="font-size:11.5px;">↻ Sincronizar com a Nuvem</button>
+          `;
+          const emptySync = document.getElementById('empty-sync-btn');
+          if (emptySync) emptySync.onclick = () => syncWithServer();
+        }
         return;
       }
 
@@ -821,7 +852,6 @@
     }
 
     function initEvents() {
-      // Alternância de Abas com Suporte a Touch e Click
       const tabLeads = document.getElementById('tab-leads-btn');
       const tabBriefings = document.getElementById('tab-briefings-btn');
 
@@ -831,13 +861,13 @@
       }
 
       if (tabLeads) {
-        tabLeads.addEventListener('click', (e) => { e.preventDefault(); selectTab('leads'); });
-        tabLeads.addEventListener('touchend', (e) => { e.preventDefault(); selectTab('leads'); });
+        tabLeads.onclick = (e) => { e.preventDefault(); selectTab('leads'); };
+        tabLeads.ontouchend = (e) => { e.preventDefault(); selectTab('leads'); };
       }
 
       if (tabBriefings) {
-        tabBriefings.addEventListener('click', (e) => { e.preventDefault(); selectTab('briefings'); });
-        tabBriefings.addEventListener('touchend', (e) => { e.preventDefault(); selectTab('briefings'); });
+        tabBriefings.onclick = (e) => { e.preventDefault(); selectTab('briefings'); };
+        tabBriefings.ontouchend = (e) => { e.preventDefault(); selectTab('briefings'); };
       }
 
       // Fechar modal de briefing
@@ -846,15 +876,15 @@
       const briefingModal = document.getElementById('admin-modal-briefing');
       [closeBriefingBtn, closeBriefingBtn2].forEach(b => {
         if (b) {
-          b.addEventListener('click', () => { if (briefingModal) briefingModal.classList.remove('open'); });
-          b.addEventListener('touchend', () => { if (briefingModal) briefingModal.classList.remove('open'); });
+          b.onclick = () => { if (briefingModal) briefingModal.classList.remove('open'); };
+          b.ontouchend = () => { if (briefingModal) briefingModal.classList.remove('open'); };
         }
       });
 
       // Copiar Briefing Formatado
       const copyBriefingBtn = document.getElementById('admin-copy-briefing-btn');
       if (copyBriefingBtn) {
-        copyBriefingBtn.addEventListener('click', () => {
+        copyBriefingBtn.onclick = () => {
           if (!currentBriefingData) return;
           const b = currentBriefingData;
           const company = b.empresa || b.company || 'Empresa';
@@ -900,7 +930,7 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
           navigator.clipboard.writeText(formattedText).then(() => {
             showToast('Briefing formatado copiado com sucesso!');
           });
-        });
+        };
       }
 
       // Busca e Filtros
@@ -920,8 +950,8 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
 
       if (btnRefresh) {
         btnRefresh.onclick = () => {
+          showToast('Sincronizando com a nuvem...', '↻');
           syncWithServer();
-          showToast('Painel sincronizado com a nuvem.');
         };
       }
 
@@ -940,6 +970,8 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
         const floating = document.getElementById('admin-floating-btn');
         if (floating) floating.style.display = 'inline-flex';
       }
+      // Executa sincronização em segundo plano imediatamente
+      syncWithServer();
     }
 
     return {
@@ -955,16 +987,7 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
     };
   })();
 
-  AdminDashboard.init();
-
-  AdminDashboard.init();
-
-  AdminDashboard.init();
-
-  AdminDashboard.init();
-
   // Inicia o módulo Administrativo
   window.AdminDashboard = AdminDashboard;
   AdminDashboard.init();
 })();
-

@@ -866,7 +866,7 @@
               <th style="text-align: right;">Ações de Contato</th>
             </tr>
           </thead>
-          <tbody id="admin-leads-tbody">
+          <tbody id="admin-table-body">
             <!-- Inserido dinamicamente via JS -->
           </tbody>
         </table>
@@ -928,7 +928,19 @@
       <input type="hidden" id="edit-lead-id">
       <div class="admin-form-group">
         <label>Nome / Empresa</label>
-        <input type="text" id="edit-lead-name" readonly="" style="opacity: 0.8;">
+        <input type="text" id="edit-lead-name" style="color:var(--ink);">
+      </div>
+      <div class="admin-form-group">
+        <label>E-mail</label>
+        <input type="email" id="edit-lead-email" style="color:var(--ink);">
+      </div>
+      <div class="admin-form-group">
+        <label>WhatsApp</label>
+        <input type="tel" id="edit-lead-phone" style="color:var(--ink);">
+      </div>
+      <div class="admin-form-group">
+        <label>Segmento / Nicho</label>
+        <input type="text" id="edit-lead-segment" style="color:var(--ink);">
       </div>
       <div class="admin-form-group">
         <label for="edit-lead-status">Alterar Status</label>
