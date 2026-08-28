@@ -118,6 +118,28 @@ module.exports = async (req, res) => {
         timeStyle: 'medium'
       });
 
+      // Texto puro do briefing formatado (Modelo Dreven para IA)
+      const rawFormattedBriefing = `Novo diagnóstico — ${empresa} (${linhaSugerida})
+
+Empresa: ${empresa}
+Segmento: ${segmento}
+Momento atual: ${momento}
+Gargalo principal: ${gargalo} → Linha sugerida: ${linhaSugerida}
+
+Como funciona hoje:
+${processo}
+
+Ferramentas atuais: ${cleanLocations}
+Frequência do problema: ${frequencia}
+Impacto quando falha: ${impacto}
+Tentativas anteriores: ${tentativas}
+
+Estrutura decisória: ${decisores}
+Prazo esperado: ${prazo}
+Canal de origem: ${canal}${indicadoPor ? ` (Indicado por: ${indicadoPor})` : ''}
+
+Contato: ${nome} (${cargo}) · ${whatsapp} · ${email}`;
+
       const briefing = {
         id: `briefing_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         empresa,
@@ -174,7 +196,7 @@ module.exports = async (req, res) => {
       if (pass) {
         const transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
 
-        // 1. E-mail ao Admin (Daniel M. Santos) — Template HTML de Luxo Dreven
+        // 1. E-mail ao Admin (Daniel M. Santos) — Template HTML com Botões e Bloco de Cópia Rápida
         const adminHtml = `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#F4F2F3; padding:32px 16px; color:#090809;">
             <div style="max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #E1E1E1; border-radius:8px; padding:36px 32px; box-shadow: 0 4px 24px rgba(9,8,9,0.06);">
@@ -191,6 +213,13 @@ module.exports = async (req, res) => {
               <h2 style="margin:0 0 6px; font-size: 22px; font-weight: 800; letter-spacing:-0.02em; color:#090809;">${empresa}</h2>
               <div style="font-size:13.5px; color:#656565; margin-bottom:24px;">
                 Decisor: <strong>${nome}</strong> (${cargo}) · ${segmento} · <span style="display:inline-block; background:#EAEAEA; color:#090809; padding:2px 8px; border-radius:3px; font-weight:700; font-size:11px;">${linhaSugerida}</span>
+              </div>
+
+              <!-- Barra de Ações Rápidas do Topo -->
+              <div style="margin-bottom:24px; display:flex; flex-wrap:wrap; gap:8px;">
+                <a href="${wppLink}" target="_blank" style="display:inline-block; background:#090809; color:#F4F2F3; padding:10px 18px; font-size:11px; text-transform:uppercase; letter-spacing:0.16em; text-decoration:none; border-radius:4px; font-weight:700;">📱 Chamar no WhatsApp</a>
+                <a href="mailto:${email}?subject=Dreven%20Company%20%E2%80%94%20Diagn%C3%B3stico%20T%C3%A9cnico%20%E2%80%A2%20${encodeURIComponent(empresa)}" style="display:inline-block; background:#EAEAEA; color:#090809; padding:10px 18px; font-size:11px; text-transform:uppercase; letter-spacing:0.16em; text-decoration:none; border-radius:4px; font-weight:700;">✉️ Responder por E-mail</a>
+                <a href="https://dreven.company/#admin" target="_blank" style="display:inline-block; background:#ffffff; color:#090809; border:1px solid #090809; padding:10px 18px; font-size:11px; text-transform:uppercase; letter-spacing:0.16em; text-decoration:none; border-radius:4px; font-weight:700;">📋 Abrir no Painel</a>
               </div>
 
               <!-- Bloco 1: Contato e Procedência -->
@@ -231,10 +260,13 @@ module.exports = async (req, res) => {
                 <p style="margin:0 0 4px;"><strong>Data do Preenchimento:</strong> ${formattedDate}</p>
               </div>
 
-              <!-- Ações Rápidas -->
-              <div style="text-align:center; padding-top:10px; margin-bottom:24px;">
-                <a href="${wppLink}" style="display:inline-block; background:#090809; color:#F4F2F3; padding:14px 28px; font-size:11.5px; text-transform:uppercase; letter-spacing:0.18em; text-decoration:none; border-radius:4px; font-weight:700; margin-right:8px;">Chamar Decisor no WhatsApp</a>
-                <a href="mailto:${email}?subject=Dreven%20Company%20%E2%80%94%20Diagn%C3%B3stico%20T%C3%A9cnico%20%E2%80%A2%20${encodeURIComponent(empresa)}" style="display:inline-block; background:#E1E1E1; color:#090809; padding:14px 24px; font-size:11.5px; text-transform:uppercase; letter-spacing:0.18em; text-decoration:none; border-radius:4px; font-weight:700;">Responder por E-mail</a>
+              <!-- BLOCO DE BRIEFING FORMATADO (PRONTO PARA SELECIONAR / COPIAR E COLAR NA IA) -->
+              <div style="background:#090809; color:#F4F2F3; padding:22px 24px; border-radius:6px; margin-bottom:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(244,242,243,0.15); padding-bottom:8px;">
+                  <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.16em; color:#EAEAEA;">📋 Briefing Formatado (Pronto para IA / Proposta)</span>
+                  <span style="font-size:10px; color:#A0A0A0; font-family:monospace;">Clique no bloco para selecionar tudo</span>
+                </div>
+                <pre style="margin:0; font-family:'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size:12.5px; line-height:1.65; white-space:pre-wrap; word-break:break-word; color:#F4F2F3; user-select:all; -webkit-user-select:all;">${rawFormattedBriefing}</pre>
               </div>
 
               <!-- Rodapé -->
@@ -249,7 +281,8 @@ module.exports = async (req, res) => {
           from: `"Dreven Company" <${user}>`,
           to: 'contato@dreven.company',
           subject: `Novo diagnóstico — ${empresa} (${linhaSugerida})`,
-          html: adminHtml
+          html: adminHtml,
+          text: rawFormattedBriefing
         });
 
         // 2. E-mail ao Cliente — Template VIP Dreven Company

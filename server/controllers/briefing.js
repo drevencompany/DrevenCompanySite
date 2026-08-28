@@ -45,6 +45,27 @@ async function handleBriefingSubmit(req, res) {
         timeStyle: 'medium'
       });
 
+      const rawFormattedBriefing = `Novo diagnóstico — ${saved.empresa} (${saved.linha_sugerida})
+
+Empresa: ${saved.empresa}
+Segmento: ${saved.segmento}
+Momento atual: ${saved.momento}
+Gargalo principal: ${saved.gargalo_principal} → Linha sugerida: ${saved.linha_sugerida}
+
+Como funciona hoje:
+${saved.descricao_livre}
+
+Ferramentas atuais: ${saved.ferramentas_atuais}
+Frequência do problema: ${saved.frequencia}
+Impacto quando falha: ${saved.impacto}
+Tentativas anteriores: ${saved.tentativas_anteriores}
+
+Estrutura decisória: ${saved.estrutura_decisoria}
+Prazo esperado: ${saved.prazo_esperado}
+Canal de origem: ${saved.canal_origem}${saved.indicado_por ? ` (Indicado por: ${saved.indicado_por})` : ''}
+
+Contato: ${saved.contato_nome} (${saved.contato_cargo}) · ${saved.contato_whatsapp} · ${saved.contato_email}`;
+
       // 1. Notificação Admin
       const adminHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#F4F2F3; padding:32px 16px; color:#090809;">
@@ -59,6 +80,12 @@ async function handleBriefingSubmit(req, res) {
             <h2 style="margin:0 0 6px; font-size: 22px; font-weight: 800; letter-spacing:-0.02em; color:#090809;">${saved.empresa}</h2>
             <div style="font-size:13.5px; color:#656565; margin-bottom:24px;">
               Decisor: <strong>${saved.contato_nome}</strong> (${saved.contato_cargo}) · ${saved.segmento} · <span style="display:inline-block; background:#EAEAEA; color:#090809; padding:2px 8px; border-radius:3px; font-weight:700; font-size:11px;">${saved.linha_sugerida}</span>
+            </div>
+
+            <div style="margin-bottom:24px; display:flex; flex-wrap:wrap; gap:8px;">
+              <a href="${wppLink}" target="_blank" style="display:inline-block; background:#090809; color:#F4F2F3; padding:10px 18px; font-size:11px; text-transform:uppercase; letter-spacing:0.16em; text-decoration:none; border-radius:4px; font-weight:700;">📱 Chamar no WhatsApp</a>
+              <a href="mailto:${saved.contato_email}?subject=Dreven%20Company%20%E2%80%94%20Diagn%C3%B3stico%20T%C3%A9cnico%20%E2%80%A2%20${encodeURIComponent(saved.empresa)}" style="display:inline-block; background:#EAEAEA; color:#090809; padding:10px 18px; font-size:11px; text-transform:uppercase; letter-spacing:0.16em; text-decoration:none; border-radius:4px; font-weight:700;">✉️ Responder por E-mail</a>
+              <a href="https://dreven.company/#admin" target="_blank" style="display:inline-block; background:#ffffff; color:#090809; border:1px solid #090809; padding:10px 18px; font-size:11px; text-transform:uppercase; letter-spacing:0.16em; text-decoration:none; border-radius:4px; font-weight:700;">📋 Abrir no Painel</a>
             </div>
 
             <div style="background:#F4F2F3; padding:18px 20px; border-radius:6px; margin-bottom:20px; font-size:13.5px; line-height:1.7;">
@@ -93,9 +120,13 @@ async function handleBriefingSubmit(req, res) {
               <p style="margin:0 0 4px;"><strong>Data do Preenchimento:</strong> ${formattedDate}</p>
             </div>
 
-            <div style="text-align:center; padding-top:10px; margin-bottom:24px;">
-              <a href="${wppLink}" style="display:inline-block; background:#090809; color:#F4F2F3; padding:14px 28px; font-size:11.5px; text-transform:uppercase; letter-spacing:0.18em; text-decoration:none; border-radius:4px; font-weight:700; margin-right:8px;">Chamar Decisor no WhatsApp</a>
-              <a href="mailto:${saved.contato_email}?subject=Dreven%20Company%20%E2%80%94%20Diagn%C3%B3stico%20T%C3%A9cnico%20%E2%80%A2%20${encodeURIComponent(saved.empresa)}" style="display:inline-block; background:#E1E1E1; color:#090809; padding:14px 24px; font-size:11.5px; text-transform:uppercase; letter-spacing:0.18em; text-decoration:none; border-radius:4px; font-weight:700;">Responder por E-mail</a>
+            <!-- BLOCO DE BRIEFING FORMATADO (PRONTO PARA SELECIONAR / COPIAR E COLAR NA IA) -->
+            <div style="background:#090809; color:#F4F2F3; padding:22px 24px; border-radius:6px; margin-bottom:24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(244,242,243,0.15); padding-bottom:8px;">
+                <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.16em; color:#EAEAEA;">📋 Briefing Formatado (Pronto para IA / Proposta)</span>
+                <span style="font-size:10px; color:#A0A0A0; font-family:monospace;">Clique no bloco para selecionar tudo</span>
+              </div>
+              <pre style="margin:0; font-family:'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size:12.5px; line-height:1.65; white-space:pre-wrap; word-break:break-word; color:#F4F2F3; user-select:all; -webkit-user-select:all;">${rawFormattedBriefing}</pre>
             </div>
 
             <div style="font-size:11px; color:#656565; border-top:1px solid #E1E1E1; padding-top:18px; text-align:center;">
@@ -109,7 +140,8 @@ async function handleBriefingSubmit(req, res) {
         from: `"Dreven Company" <${user}>`,
         to: 'contato@dreven.company',
         subject: `Novo diagnóstico — ${saved.empresa} (${saved.linha_sugerida})`,
-        html: adminHtml
+        html: adminHtml,
+        text: rawFormattedBriefing
       });
 
       // 2. Confirmação Cliente
