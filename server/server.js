@@ -6,6 +6,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 const { handleContactForm, handleGetLeads, handleUpdateLead, handleDeleteLead } = require('./controllers/contact');
+const { handleBriefingSubmit, handleGetBriefings, handleDeleteBriefing } = require('./controllers/briefing');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +31,10 @@ const contactLimiter = rateLimit({
 
 // Rotas da API
 app.post('/api/contact', contactLimiter, handleContactForm);
+app.post('/api/diagnostico', contactLimiter, handleBriefingSubmit);
+app.get('/api/briefings', handleGetBriefings);
+app.get('/api/diagnostico', handleGetBriefings);
+app.delete('/api/briefings/:id', handleDeleteBriefing);
 app.get('/api/leads', handleGetLeads);
 app.put('/api/leads/:id', handleUpdateLead);
 app.delete('/api/leads/:id', handleDeleteLead);

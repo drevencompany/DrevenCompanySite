@@ -339,7 +339,7 @@
     const STORAGE_KEY = 'dreven_admin_leads';
     const BRIEFINGS_STORAGE_KEY = 'dreven_admin_briefings';
     const AUTH_KEY = 'dreven_admin_logged';
-    let currentTab = 'leads'; // 'leads' ou 'briefings'
+    let currentTab = 'briefings'; // Abre prioritariamente na aba de diagnósticos/briefings
     let currentBriefingData = null;
 
     function getLocalLeads() {
@@ -427,6 +427,7 @@
       if (overlay) overlay.classList.add('open');
       if (floating) floating.style.display = 'none';
       lockScroll(true);
+      syncWithServer();
       render();
     }
 
@@ -442,7 +443,6 @@
       sessionStorage.setItem(AUTH_KEY, 'true');
       openPanel();
       showToast('Acesso Administrativo Autorizado. Bem-vindo, Daniel.');
-      syncWithServer();
     }
 
     function logout() {
@@ -456,16 +456,34 @@
     }
 
     async function syncWithServer() {
+      // 1. Sincronizar Leads
       try {
         const res = await fetch('/api/leads');
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.leads)) {
             setLocalLeads(data.leads);
-            render();
           }
         }
       } catch (err) {}
+
+      // 2. Sincronizar Briefings / Diagnósticos
+      try {
+        const resB = await fetch('/api/diagnostico');
+        if (resB.ok) {
+          const dataB = await resB.json();
+          if (dataB.success && Array.isArray(dataB.briefings) && dataB.briefings.length > 0) {
+            const current = getLocalBriefings();
+            const currentIds = new Set(current.map(c => c.id));
+            const newOnes = dataB.briefings.filter(b => !currentIds.has(b.id));
+            if (newOnes.length > 0) {
+              setLocalBriefings([...newOnes, ...current]);
+            }
+          }
+        }
+      } catch (err) {}
+
+      render();
     }
 
     function renderKPIs(leads, briefings) {
@@ -512,7 +530,7 @@
       const statusFilter = filterStatus ? filterStatus.value : 'todos';
       const segmentFilter = filterSegment ? filterSegment.value : 'todos';
 
-      // Atualizar Cabeçalho da Tabela baseado na aba ativa
+      // Atualizar Cabeçalho da Tabela
       if (thead) {
         if (currentTab === 'leads') {
           thead.innerHTML = `
@@ -528,10 +546,10 @@
           thead.innerHTML = `
             <th>Empresa / Decisor</th>
             <th>Segmento</th>
-            <th>Gargalo Principal</th>
+            <th>Linha Sugerida &amp; Gargalo</th>
             <th>Origem &amp; Indicação</th>
+            <th>Prazo</th>
             <th>Status</th>
-            <th>Data</th>
             <th style="text-align: right;">Ações</th>
           `;
         }
@@ -539,12 +557,12 @@
 
       // Filtragem
       const filtered = items.filter(item => {
-        const name = (item.name || '').toLowerCase();
-        const email = (item.email || '').toLowerCase();
-        const phone = (item.phone || '').toLowerCase();
-        const segment = (item.segment || '').toLowerCase();
-        const company = (item.company || '').toLowerCase();
-        const referrer = (item.referrer || '').toLowerCase();
+        const name = (item.contato_nome || item.name || '').toLowerCase();
+        const email = (item.contato_email || item.email || '').toLowerCase();
+        const phone = (item.contato_whatsapp || item.phone || '').toLowerCase();
+        const segment = (item.segmento || item.segment || '').toLowerCase();
+        const company = (item.empresa || item.company || '').toLowerCase();
+        const referrer = (item.indicado_por || item.referrer || '').toLowerCase();
 
         const matchQuery = !query || name.includes(query) || email.includes(query) || phone.includes(query) || segment.includes(query) || company.includes(query) || referrer.includes(query);
         const matchStatus = statusFilter === 'todos' || (item.status || 'novo') === statusFilter;
@@ -572,7 +590,7 @@
           minute: '2-digit'
         });
 
-        const rawPhone = (item.phone || '').replace(/\D/g, '');
+        const rawPhone = (item.contato_whatsapp || item.phone || '').replace(/\D/g, '');
         const wppUrl = rawPhone ? `https://wa.me/${rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone}` : '#';
 
         if (currentTab === 'leads') {
@@ -593,20 +611,36 @@
           `;
         } else {
           // Linha de Briefing Completo
-          const referralInfo = item.channel === 'Indicação / Recomendação' && item.referrer ? `👤 Indicação: <b>${item.referrer}</b>` : (item.channel || 'Direto');
+          const companyName = item.empresa || item.company || 'Empresa sem nome';
+          const decisorName = item.contato_nome || item.name || 'Decisor';
+          const decisorRole = item.contato_cargo || item.role || 'Responsável';
+          const decisorEmail = item.contato_email || item.email || '';
+          const segmento = item.segmento || item.segment || 'Geral';
+          const linha = item.linha_sugerida || 'Linha 1 · Presença Digital';
+          const gargalo = item.gargalo_principal || item.bottleneck || 'Mapeamento Geral';
+          const prazo = item.prazo_esperado || item.timeline || 'Não especificado';
+
+          let referralInfo = item.canal_origem || item.channel || 'Direto';
+          if ((item.canal_origem === 'Indicação' || item.channel === 'Indicação') && (item.indicado_por || item.referrer)) {
+            referralInfo = `<span style="background:rgba(9,8,9,0.06); padding:3px 6px; border-radius:3px; font-weight:600; color:var(--ink);">👤 ${item.indicado_por || item.referrer}</span>`;
+          }
+
           tr.innerHTML = `
             <td>
-              <div class="lead-cell-name"><b>${item.company || 'Empresa'}</b></div>
-              <div class="lead-cell-email">${item.name || 'Decisor'} (${item.role || 'Responsável'}) · <a href="mailto:${item.email}" class="lead-email-link">${item.email}</a></div>
+              <div class="lead-cell-name" style="font-size: 14.5px;"><b>${companyName}</b></div>
+              <div class="lead-cell-email">${decisorName} (${decisorRole}) · <a href="mailto:${decisorEmail}" class="lead-email-link">${decisorEmail}</a></div>
             </td>
-            <td><span class="lead-cell-segment">${item.segment || 'Geral'}</span></td>
-            <td><span class="lead-cell-bottleneck" style="font-size:12.5px; color:var(--ink); font-weight:500;">${item.bottleneck || 'Mapeamento Geral'}</span></td>
+            <td><span class="lead-cell-segment">${segmento}</span></td>
+            <td>
+              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); margin-bottom: 2px;">${linha}</div>
+              <div style="font-size: 12.5px; color: var(--mid);">${gargalo}</div>
+            </td>
             <td><span class="lead-cell-source">${referralInfo}</span></td>
+            <td style="font-size: 12px; color: var(--ink); font-weight: 500;">${prazo}</td>
             <td><span class="lead-status-pill status-${item.status || 'novo'}">${getStatusLabel(item.status || 'novo')}</span></td>
-            <td style="font-size: 12px; color: var(--mid);">${formattedDate}</td>
-            <td style="text-align: right;">
-              <button class="action-icon-btn view-briefing-btn" data-id="${item.id}" title="Ver Briefing Completo" style="font-size:14px; font-weight:700; background:var(--ink); color:var(--bone); border-radius:3px; padding:4px 8px;">📋 Ver Briefing</button>
-              <button class="action-icon-btn delete-briefing-btn" data-id="${item.id}" title="Excluir" style="color:#d9534f; margin-left:6px;">🗑️</button>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="action-icon-btn view-briefing-btn" data-id="${item.id}" title="Ver Briefing Completo" style="font-size:12.5px; font-weight:700; background:var(--ink); color:var(--bone); border-radius:3px; padding:6px 12px; border:none; cursor:pointer;">Ver Briefing</button>
+              <button class="action-icon-btn delete-briefing-btn" data-id="${item.id}" title="Excluir" style="color:#d9534f; margin-left:6px; background:transparent; border:none; cursor:pointer; font-size:14px;">🗑️</button>
             </td>
           `;
         }
@@ -614,15 +648,14 @@
         tbody.appendChild(tr);
       });
 
-      // Listeners da tabela
       attachTableEvents();
     }
 
     function getStatusLabel(s) {
       const map = {
         novo: 'Novo',
-        em_contato: 'Em Contato',
-        agendado: 'Agendado',
+        em_contato: 'Em Análise',
+        agendado: 'Alinhamento Agendado',
         proposta: 'Proposta Enviada',
         convertido: 'Fechado',
         arquivado: 'Arquivado'
@@ -655,7 +688,7 @@
               setLocalLeads(leads);
             }
             renderTable();
-            showToast('Registro excluído do painel.');
+            showToast('Registro excluído com sucesso.');
           }
         });
       });
@@ -673,51 +706,69 @@
       const content = document.getElementById('briefing-modal-content');
       const wppBtn = document.getElementById('briefing-wpp-btn');
 
-      if (title) title.textContent = b.company || 'Diagnóstico Estratégico';
-      if (sub) sub.textContent = `${b.name} (${b.role || 'Decisor'}) · ${b.segment}`;
+      const company = b.empresa || b.company || 'Empresa';
+      const name = b.contato_nome || b.name || 'Decisor';
+      const role = b.contato_cargo || b.role || 'Responsável';
+      const segment = b.segmento || b.segment || 'Geral';
+      const phone = b.contato_whatsapp || b.phone || '';
+      const email = b.contato_email || b.email || '';
+      const linha = b.linha_sugerida || 'Linha 1 · Presença Digital';
+      const momento = b.momento || b.moment || 'Não informado';
+      const gargalo = b.gargalo_principal || b.bottleneck || 'Não informado';
+      const processo = b.descricao_livre || b.process_desc || 'Não detalhado';
+      const ferramentas = b.ferramentas_atuais || b.data_location || 'Não informado';
+      const freq = b.frequencia || b.frequency || 'Não informado';
+      const impacto = b.impacto || b.impact || 'Não informado';
+      const tentativas = b.tentativas_anteriores || b.previous_attempts || 'Não informado';
+      const decisores = b.estrutura_decisoria || b.decision_makers || 'Não informado';
+      const prazo = b.prazo_esperado || b.timeline || 'Não informado';
+      const canal = b.canal_origem || b.channel || 'Direto';
+      const indicadoPor = b.indicado_por || b.referrer || '';
 
-      const rawPhone = (b.phone || '').replace(/\D/g, '');
+      if (title) title.textContent = company;
+      if (sub) sub.textContent = `${name} (${role}) · ${segment} · ${linha}`;
+
+      const rawPhone = phone.replace(/\D/g, '');
       const wppUrl = rawPhone ? `https://wa.me/${rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone}` : '#';
       if (wppBtn) wppBtn.href = wppUrl;
-
-      const locations = Array.isArray(b.data_location) ? b.data_location.join(', ') : (b.data_location || 'Não informado');
 
       if (content) {
         content.innerHTML = `
           <!-- Decisor & Contato -->
           <div class="briefing-section">
-            <div class="briefing-section-title">1. Contato &amp; Procedência</div>
-            <div class="briefing-row"><strong>Nome do Decisor:</strong> ${b.name} (${b.role || 'Não especificado'})</div>
-            <div class="briefing-row"><strong>Empresa / Operação:</strong> ${b.company || '—'}</div>
-            <div class="briefing-row"><strong>WhatsApp:</strong> <a href="${wppUrl}" target="_blank" style="color:var(--ink); font-weight:600;">${b.phone}</a></div>
-            <div class="briefing-row"><strong>E-mail:</strong> <a href="mailto:${b.email}" style="color:var(--ink);">${b.email}</a></div>
-            <div class="briefing-row"><strong>Origem do Contato:</strong> ${b.channel || 'Direto'}</div>
-            ${b.channel === 'Indicação / Recomendação' && b.referrer ? `
-              <div class="briefing-referrer-highlight">👤 Indicado por: ${b.referrer}</div>
+            <div class="briefing-section-title">1. Decisor &amp; Procedência</div>
+            <div class="briefing-row"><strong>Nome do Decisor:</strong> ${name} (${role})</div>
+            <div class="briefing-row"><strong>Empresa / Operação:</strong> ${company}</div>
+            <div class="briefing-row"><strong>WhatsApp:</strong> <a href="${wppUrl}" target="_blank" style="color:var(--ink); font-weight:600;">${phone}</a></div>
+            <div class="briefing-row"><strong>E-mail:</strong> <a href="mailto:${email}" style="color:var(--ink);">${email}</a></div>
+            <div class="briefing-row"><strong>Origem do Contato:</strong> ${canal}</div>
+            ${indicadoPor ? `
+              <div class="briefing-referrer-highlight">👤 Indicado por: ${indicadoPor}</div>
             ` : ''}
           </div>
 
-          <!-- Mapeamento de Gargalos -->
+          <!-- Diagnóstico Técnico -->
           <div class="briefing-section">
-            <div class="briefing-section-title">2. Diagnóstico Operacional</div>
-            <div class="briefing-row"><strong>Segmento:</strong> ${b.segment}</div>
-            <div class="briefing-row"><strong>Momento Atual:</strong> ${b.moment}</div>
-            <div class="briefing-row"><strong>Gargalo Principal:</strong> ${b.bottleneck}</div>
-            <div style="margin-top:10px;">
+            <div class="briefing-section-title">2. Diagnóstico &amp; Gargalos (Schema v2)</div>
+            <div class="briefing-row"><strong>Linha Sugerida:</strong> <span style="background:var(--ink); color:var(--bone); padding:2px 8px; border-radius:3px; font-weight:700; font-size:12px;">${linha}</span></div>
+            <div class="briefing-row"><strong>Segmento:</strong> ${segment}</div>
+            <div class="briefing-row"><strong>Momento Atual:</strong> ${momento}</div>
+            <div class="briefing-row"><strong>Gargalo Principal:</strong> ${gargalo}</div>
+            <div style="margin-top:12px;">
               <strong style="display:block; margin-bottom:4px;">Como funciona hoje na prática:</strong>
-              <div class="briefing-quote">"${b.process_desc || 'Não detalhado'}"</div>
+              <div class="briefing-quote">"${processo}"</div>
             </div>
-            <div class="briefing-row"><strong>Onde os dados ficam:</strong> ${locations}</div>
-            <div class="briefing-row"><strong>Frequência do Gargalo:</strong> ${b.frequency}</div>
-            <div class="briefing-row"><strong>Consequência / Impacto:</strong> ${b.impact}</div>
+            <div class="briefing-row"><strong>Onde as informações ficam:</strong> ${ferramentas}</div>
+            <div class="briefing-row"><strong>Frequência do Problema:</strong> ${freq}</div>
+            <div class="briefing-row"><strong>Impacto / Custo de Falha:</strong> ${impacto}</div>
           </div>
 
           <!-- Decisão & Prazos -->
           <div class="briefing-section">
             <div class="briefing-section-title">3. Decisão &amp; Prazos</div>
-            <div class="briefing-row"><strong>Tentativas Anteriores:</strong> ${b.previous_attempts}</div>
-            <div class="briefing-row"><strong>Quem Decide:</strong> ${b.decision_makers}</div>
-            <div class="briefing-row"><strong>Prazo de Implementação:</strong> ${b.timeline}</div>
+            <div class="briefing-row"><strong>Tentativas Anteriores:</strong> ${tentativas}</div>
+            <div class="briefing-row"><strong>Estrutura Decisória:</strong> ${decisores}</div>
+            <div class="briefing-row"><strong>Prazo Esperado:</strong> ${prazo}</div>
           </div>
         `;
       }
@@ -796,35 +847,54 @@
         });
       });
 
-      // Copiar Briefing Formatado
+      // Copiar Briefing Formatado (Formato Exato da Seção 6 / Modelo de Briefing)
       const copyBriefingBtn = document.getElementById('admin-copy-briefing-btn');
       if (copyBriefingBtn) {
         copyBriefingBtn.addEventListener('click', () => {
           if (!currentBriefingData) return;
           const b = currentBriefingData;
-          const text = `====================================================
-DREVEN COMPANY — BRIEFING DE ENGENHARIA & DIAGNÓSTICO
-====================================================
-Empresa: ${b.company}
-Decisor: ${b.name} (${b.role || 'Responsável'})
-WhatsApp: ${b.phone}
-E-mail: ${b.email}
-Origem: ${b.channel} ${b.referrer ? `(Indicado por: ${b.referrer})` : ''}
+          const company = b.empresa || b.company || 'Empresa';
+          const name = b.contato_nome || b.name || 'Decisor';
+          const role = b.contato_cargo || b.role || 'Responsável';
+          const segment = b.segmento || b.segment || 'Geral';
+          const phone = b.contato_whatsapp || b.phone || '';
+          const email = b.contato_email || b.email || '';
+          const linha = b.linha_sugerida || 'Linha 1 · Presença Digital';
+          const momento = b.momento || b.moment || 'Não informado';
+          const gargalo = b.gargalo_principal || b.bottleneck || 'Não informado';
+          const processo = b.descricao_livre || b.process_desc || 'Não detalhado';
+          const ferramentas = b.ferramentas_atuais || b.data_location || 'Não informado';
+          const freq = b.frequencia || b.frequency || 'Não informado';
+          const impacto = b.impacto || b.impact || 'Não informado';
+          const tentativas = b.tentativas_anteriores || b.previous_attempts || 'Não informado';
+          const decisores = b.estrutura_decisoria || b.decision_makers || 'Não informado';
+          const prazo = b.prazo_esperado || b.timeline || 'Não informado';
+          const canal = b.canal_origem || b.channel || 'Direto';
+          const indicadoPor = b.indicado_por || b.referrer || '';
 
-1. Segmento: ${b.segment}
-2. Momento Atual: ${b.moment}
-3. Gargalo Principal: ${b.bottleneck}
-4. Como funciona hoje: "${b.process_desc}"
-5. Onde os dados ficam: ${Array.isArray(b.data_location) ? b.data_location.join(', ') : b.data_location}
-6. Frequência do Gargalo: ${b.frequency}
-7. Consequência / Impacto: ${b.impact}
-8. Tentativas Anteriores: ${b.previous_attempts}
-9. Quem Decide: ${b.decision_makers}
-10. Prazo: ${b.timeline}
-====================================================`;
+          const formattedText = `Novo diagnóstico — ${company} (${linha})
 
-          navigator.clipboard.writeText(text).then(() => {
-            showToast('Briefing copiado para a área de transferência!');
+Empresa: ${company}
+Segmento: ${segment}
+Momento atual: ${momento}
+Gargalo principal: ${gargalo} → Linha sugerida: ${linha}
+
+Como funciona hoje:
+${processo}
+
+Ferramentas atuais: ${ferramentas}
+Frequência do problema: ${freq}
+Impacto quando falha: ${impacto}
+Tentativas anteriores: ${tentativas}
+
+Estrutura decisória: ${decisores}
+Prazo esperado: ${prazo}
+Canal de origem: ${canal} ${indicadoPor ? `(Indicado por: ${indicadoPor})` : ''}
+
+Contato: ${name} (${role}) · ${phone} · ${email}`;
+
+          navigator.clipboard.writeText(formattedText).then(() => {
+            showToast('Briefing formatado copiado! Pronto para colar na Claude.');
           });
         });
       }
@@ -878,6 +948,8 @@ Origem: ${b.channel} ${b.referrer ? `(Indicado por: ${b.referrer})` : ''}
       render
     };
   })();
+
+  AdminDashboard.init();
 
   AdminDashboard.init();
 
