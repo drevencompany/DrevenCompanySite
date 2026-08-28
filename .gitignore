@@ -13,6 +13,8 @@ server/data/
 node_modules/
 .vercel/
 .codex/
+.worktrees/
+.superpowers/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
