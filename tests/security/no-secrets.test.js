@@ -28,8 +28,14 @@ function findCredentialFallback(source, pattern, file, kind) {
   return null;
 }
 
+function restoreCachedModule(modulePath, cacheEntry) {
+  if (cacheEntry) require.cache[modulePath] = cacheEntry;
+  else delete require.cache[modulePath];
+}
+
 test('legacy database read does not send a credential-shaped fallback when GitHub token is absent', async () => {
   const modulePath = require.resolve('../../api/lib/db');
+  const originalCacheEntry = require.cache[modulePath];
   const originalRequest = https.request;
   const tokenWasSet = Object.hasOwn(process.env, 'GITHUB_TOKEN');
   const originalToken = process.env.GITHUB_TOKEN;
@@ -61,9 +67,47 @@ test('legacy database read does not send a credential-shaped fallback when GitHu
     }
   } finally {
     https.request = originalRequest;
-    delete require.cache[modulePath];
+    restoreCachedModule(modulePath, originalCacheEntry);
     if (tokenWasSet) process.env.GITHUB_TOKEN = originalToken;
     else delete process.env.GITHUB_TOKEN;
+  }
+});
+
+test('legacy database request harness preserves a pre-existing module cache entry', async () => {
+  const modulePath = require.resolve('../../api/lib/db');
+  const initialCacheEntry = require.cache[modulePath];
+  const originalRequest = https.request;
+  const tokenWasSet = Object.hasOwn(process.env, 'GITHUB_TOKEN');
+  const originalToken = process.env.GITHUB_TOKEN;
+  const preExistingEntry = require(modulePath) && require.cache[modulePath];
+
+  delete process.env.GITHUB_TOKEN;
+  https.request = (_options, onResponse) => {
+    const request = new EventEmitter();
+    request.end = () => {
+      const response = new EventEmitter();
+      response.statusCode = 401;
+      onResponse(response);
+      response.emit('data', '{}');
+      response.emit('end');
+    };
+    return request;
+  };
+
+  delete require.cache[modulePath];
+  try {
+    await require(modulePath).getLeads();
+  } finally {
+    https.request = originalRequest;
+    if (tokenWasSet) process.env.GITHUB_TOKEN = originalToken;
+    else delete process.env.GITHUB_TOKEN;
+    restoreCachedModule(modulePath, preExistingEntry);
+  }
+
+  try {
+    assert.strictEqual(require.cache[modulePath], preExistingEntry);
+  } finally {
+    restoreCachedModule(modulePath, initialCacheEntry);
   }
 });
 
