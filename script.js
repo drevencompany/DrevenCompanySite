@@ -166,7 +166,7 @@
         const otherInput = document.getElementById('other-segment-input');
         if (otherInput) otherInput.style.display = 'none';
         
-        AdminDashboard.login();
+        window.location.href = '/admin';
         return;
       }
 
@@ -187,19 +187,6 @@
         hp: formData.get('hp') || '',
         source: 'website_diagnostico_form'
       };
-
-      // Salva localmente o lead para persistência imediata
-      AdminDashboard.saveLeadLocal({
-        id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        name: payload.name,
-        email: payload.email,
-        phone: payload.phone,
-        segment: payload.segment || 'Não informado',
-        status: 'novo',
-        notes: '',
-        source: 'Formulário do Site',
-        createdAt: new Date().toISOString()
-      });
 
       // Estado de Carregamento
       if (submitBtn) submitBtn.disabled = true;
