@@ -22,17 +22,14 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  // GET: Retornar lista persistente de briefings para o painel admin
+  // GET: Endpoint legado protegido
   if (req.method === 'GET') {
-    try {
-      const briefings = await db.getBriefings();
-      return res.status(200).json({
-        success: true,
-        briefings
-      });
-    } catch (err) {
-      return res.status(200).json({ success: true, briefings: [] });
-    }
+    res.setHeader('Deprecation', 'true');
+    res.setHeader('Link', '</api/admin/diagnosticos>; rel="successor-version"');
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized: this endpoint is deprecated and requires administrative authentication via /api/admin/diagnosticos.'
+    });
   }
 
   // POST: Submissão de novo diagnóstico

@@ -29,15 +29,30 @@ const contactLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Rotas da API
+const { expressAdminAuth } = require('./middleware/admin-auth');
+
+// Rotas de Autenticação Administrativa
+app.get('/api/auth/login', require('../api/auth/login'));
+app.get('/api/auth/callback', require('../api/auth/callback'));
+app.get('/api/auth/session', require('../api/auth/session'));
+app.get('/api/auth/csrf', require('../api/auth/csrf'));
+app.post('/api/auth/logout', require('../api/auth/logout'));
+
+// Rotas da API Pública
 app.post('/api/contact', contactLimiter, handleContactForm);
 app.post('/api/diagnostico', contactLimiter, handleBriefingSubmit);
-app.get('/api/briefings', handleGetBriefings);
-app.get('/api/diagnostico', handleGetBriefings);
-app.delete('/api/briefings/:id', handleDeleteBriefing);
-app.get('/api/leads', handleGetLeads);
-app.put('/api/leads/:id', handleUpdateLead);
-app.delete('/api/leads/:id', handleDeleteLead);
+
+// Endpoints legados (Depreciados & Bloqueados para acesso anônimo)
+app.get('/api/briefings', (req, res) => res.status(401).json({ success: false, error: 'Unauthorized' }));
+app.get('/api/diagnostico', (req, res) => res.status(401).json({ success: false, error: 'Unauthorized' }));
+app.get('/api/leads', (req, res) => res.status(401).json({ success: false, error: 'Unauthorized' }));
+
+// Rotas Administrativas Protegidas (Exigem Sessão + CSRF para mutações)
+app.get('/api/admin/leads', expressAdminAuth(), handleGetLeads);
+app.put('/api/admin/leads/:id?', expressAdminAuth({ requireCsrf: true }), handleUpdateLead);
+app.delete('/api/admin/leads/:id?', expressAdminAuth({ requireCsrf: true }), handleDeleteLead);
+app.get('/api/admin/diagnosticos', expressAdminAuth(), handleGetBriefings);
+app.delete('/api/admin/diagnosticos/:id?', expressAdminAuth({ requireCsrf: true }), handleDeleteBriefing);
 
 app.get('/api/health', (req, res) => {
   res.json({

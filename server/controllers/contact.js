@@ -1,4 +1,4 @@
-const { saveLead, getLeads } = require('../services/storage');
+const { saveLead, getLeads, updateLead, deleteLead } = require('../services/storage');
 const { sendContactEmails } = require('../services/mailer');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
