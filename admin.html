@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Controle · Dreven Company</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <!-- Gate de Autenticação para Usuários Não Conectados -->
+  <section id="auth-gate" class="admin-auth-gate">
+    <div class="admin-auth-card">
+      <span class="brand-badge">DREVEN CO.</span>
+      <h2>Acesso Administrativo Restrito</h2>
+      <p>Este painel contém informações confidenciais de leads e diagnósticos da operação. Conecte-se com sua conta de operador autorizada.</p>
+      <a id="btn-login-github" href="/api/auth/login" class="admin-auth-btn">
+        <span>Conectar com GitHub</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Aplicativo do Painel (Exibido apenas quando autenticado) -->
+  <div id="admin-app" class="admin-app">
+    <header class="admin-header">
+      <div class="admin-header-brand">
+        <span class="brand-badge">DREVEN CO.</span>
+        <div class="brand-title">
+          <h1>Painel de Controle de Leads &amp; Clientes</h1>
+          <span id="admin-user-info">Autenticado como Administrador</span>
+        </div>
+      </div>
+      <div class="admin-header-actions">
+        <button id="admin-btn-new" class="admin-btn admin-btn-primary" type="button">
+          <span>+ Novo Lead</span>
+        </button>
+        <button id="admin-btn-export" class="admin-btn admin-btn-secondary" type="button">
+          <span>Exportar (CSV)</span>
+        </button>
+        <button id="admin-btn-refresh" class="admin-btn admin-btn-secondary" type="button">
+          <span>↻ Sincronizar</span>
+        </button>
+        <a href="/" class="admin-btn admin-btn-ghost">
+          <span>Ver Site</span>
+        </a>
+        <button id="admin-btn-logout" class="admin-btn admin-btn-danger" type="button">
+          <span>Sair</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="admin-body">
+      <!-- Abas de Navegação -->
+      <div class="admin-tabs-nav">
+        <button type="button" class="admin-tab-btn active" id="tab-leads-btn" data-tab="leads">
+          <span>👥</span>
+          <span>Leads do Site</span>
+          <span class="tab-count" id="count-leads-tab">0</span>
+        </button>
+        <button type="button" class="admin-tab-btn" id="tab-briefings-btn" data-tab="briefings">
+          <span>📋</span>
+          <span>Diagnósticos &amp; Briefings</span>
+          <span class="tab-count" id="count-briefings-tab">0</span>
+        </button>
+      </div>
+
+      <!-- KPIs Rápidos -->
+      <section class="admin-kpis">
+        <div class="admin-kpi-card kpi-total">
+          <span class="kpi-label">Total de Registros</span>
+          <span class="kpi-value" id="kpi-total-val">0</span>
+          <span class="kpi-desc">Cadastros e solicitações</span>
+        </div>
+        <div class="admin-kpi-card kpi-new">
+          <span class="kpi-label">Novos / Pendentes</span>
+          <span class="kpi-value" id="kpi-new-val">0</span>
+          <span class="kpi-desc">Aguardando contato</span>
+        </div>
+        <div class="admin-kpi-card kpi-contact">
+          <span class="kpi-label">Em Atendimento</span>
+          <span class="kpi-value" id="kpi-contact-val">0</span>
+          <span class="kpi-desc">Em diagnóstico / proposta</span>
+        </div>
+        <div class="admin-kpi-card kpi-won">
+          <span class="kpi-label">Convertidos / Fechados</span>
+          <span class="kpi-value" id="kpi-won-val">0</span>
+          <span class="kpi-desc">Negócios fechados</span>
+        </div>
+      </section>
+
+      <!-- Barra de Filtros -->
+      <section class="admin-toolbar">
+        <div class="admin-search-box">
+          <input type="text" id="admin-search-input" placeholder="Pesquisar por nome, e-mail, telefone, empresa..." autocomplete="off">
+        </div>
+        <div class="admin-filter-group">
+          <select id="admin-filter-status" class="admin-select" aria-label="Filtrar por status">
+            <option value="todos">Todos os Status</option>
+            <option value="novo">Novo / Pendente</option>
+            <option value="em_contato">Em Contato</option>
+            <option value="convertido">Convertido</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+          <select id="admin-filter-segment" class="admin-select" aria-label="Filtrar por segmento">
+            <option value="todos">Todos os Segmentos</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Tabela de Dados -->
+      <section class="admin-table-wrap">
+        <table class="admin-table">
+          <thead id="admin-table-head">
+            <tr>
+              <th>Lead / Origem</th>
+              <th>Contato Direto</th>
+              <th>Segmento / Gargalo</th>
+              <th>Status</th>
+              <th>Data</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body">
+            <!-- Renderizado dinamicamente via textContent / DOM APIs -->
+          </tbody>
+        </table>
+        <div id="admin-empty-state" class="admin-empty-state" style="display:none;">
+          <h3>Nenhum registro encontrado</h3>
+          <p>Tente ajustar os filtros de busca ou sincronizar os dados.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: Novo Lead -->
+  <div id="admin-modal-newlead" class="admin-submodal">
+    <div class="admin-submodal-box">
+      <div class="admin-submodal-header">
+        <h3>Cadastrar Novo Lead</h3>
+        <button type="button" id="admin-close-newlead" class="admin-btn-ghost">✕</button>
+      </div>
+      <form id="admin-form-newlead">
+        <div class="admin-form-group">
+          <label for="new-lead-name">Nome Completo</label>
+          <input type="text" id="new-lead-name" required placeholder="Ex: Roberto Silva">
+        </div>
+        <div class="admin-form-group">
+          <label for="new-lead-email">E-mail</label>
+          <input type="email" id="new-lead-email" required placeholder="Ex: roberto@empresa.com">
+        </div>
+        <div class="admin-form-group">
+          <label for="new-lead-phone">WhatsApp / Telefone</label>
+          <input type="text" id="new-lead-phone" placeholder="Ex: (41) 99999-9999">
+        </div>
+        <div class="admin-form-group">
+          <label for="new-lead-segment">Segmento</label>
+          <input type="text" id="new-lead-segment" placeholder="Ex: Indústria, Serviços, E-commerce">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+          <button type="button" id="admin-cancel-newlead" class="admin-btn admin-btn-secondary">Cancelar</button>
+          <button type="submit" class="admin-btn admin-btn-primary">Salvar Lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Lead -->
+  <div id="admin-modal-edit" class="admin-submodal">
+    <div class="admin-submodal-box">
+      <div class="admin-submodal-header">
+        <h3 id="admin-edit-title">Detalhes do Lead</h3>
+        <button type="button" id="admin-close-edit" class="admin-btn-ghost">✕</button>
+      </div>
+      <form id="admin-form-edit">
+        <input type="hidden" id="edit-lead-id">
+        <div class="admin-form-group">
+          <label for="edit-lead-name">Nome</label>
+          <input type="text" id="edit-lead-name" required>
+        </div>
+        <div class="admin-form-group">
+          <label for="edit-lead-email">E-mail</label>
+          <input type="email" id="edit-lead-email" required>
+        </div>
+        <div class="admin-form-group">
+          <label for="edit-lead-phone">Telefone</label>
+          <input type="text" id="edit-lead-phone">
+        </div>
+        <div class="admin-form-group">
+          <label for="edit-lead-status">Status</label>
+          <select id="edit-lead-status" class="admin-select">
+            <option value="novo">Novo / Pendente</option>
+            <option value="em_contato">Em Contato</option>
+            <option value="convertido">Convertido</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+        </div>
+        <div class="admin-form-group">
+          <label for="edit-lead-notes">Notas / Histórico</label>
+          <textarea id="edit-lead-notes" placeholder="Anotações internas sobre o lead..."></textarea>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+          <button type="button" id="admin-delete-lead-btn" class="admin-btn admin-btn-danger">Excluir</button>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="admin-cancel-edit" class="admin-btn admin-btn-secondary">Fechar</button>
+            <button type="submit" class="admin-btn admin-btn-primary">Salvar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Exibir Diagnóstico Completo -->
+  <div id="admin-modal-briefing" class="admin-submodal">
+    <div class="admin-submodal-box" style="max-width: 720px; max-height: 90vh;">
+      <div class="admin-submodal-header">
+        <h3 id="briefing-modal-title">Diagnóstico Completo</h3>
+        <button type="button" id="admin-close-briefing" class="admin-btn-ghost">✕</button>
+      </div>
+      <div id="briefing-modal-content" style="overflow-y: auto; max-height: 60vh; font-size: 13.5px; line-height: 1.6;">
+        <!-- Preenchido via textContent seguro -->
+      </div>
+      <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; border-top: 1px solid var(--admin-border); padding-top: 12px;">
+        <button type="button" id="admin-copy-briefing-btn" class="admin-btn admin-btn-secondary">Copiar para IA</button>
+        <div style="display: flex; gap: 10px;">
+          <a id="briefing-wpp-btn" href="#" target="_blank" class="admin-btn admin-btn-primary">WhatsApp</a>
+          <button type="button" id="admin-close-briefing-btn2" class="admin-btn admin-btn-secondary">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="admin-toast" class="admin-toast" role="status">
+    <span id="admin-toast-text">Ação executada com sucesso.</span>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
