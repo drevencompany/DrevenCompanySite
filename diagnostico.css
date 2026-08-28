@@ -1,0 +1,505 @@
+/* ============================================================
+   Dreven Company — Diagnóstico & Briefing Estratégico
+   Design System Monocromático Estrito (Apple/Linear UI)
+   - White Smoke (#F4F2F3)
+   - Platinum    (#E1E1E1)
+   - Silver      (#B0B0B0)
+   - Dim Gray    (#656565)
+   - Black       (#090809)
+   ============================================================ */
+
+:root {
+  --white-smoke: #F4F2F3;
+  --platinum: #E1E1E1;
+  --silver: #B0B0B0;
+  --dim-gray: #656565;
+  --black: #090809;
+
+  --bg-main: #090809;
+  --card-bg: rgba(18, 17, 18, 0.75);
+  --border-subtle: rgba(244, 242, 243, 0.08);
+  --border-active: rgba(244, 242, 243, 0.28);
+  --text-main: #F4F2F3;
+  --text-muted: #B0B0B0;
+  --text-dim: #656565;
+
+  --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: "Poppins", "Archivo", -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Fundo & Brilhos Sutis */
+.diag-bg-noise {
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(244, 242, 243, 0.03) 1px, transparent 0);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.diag-ambient-glow {
+  position: fixed;
+  top: -10vw;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70vw;
+  height: 35vw;
+  background: radial-gradient(circle, rgba(244, 242, 243, 0.035) 0%, rgba(9, 8, 9, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.diag-wrap {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 32px);
+  position: relative;
+  z-index: 1;
+}
+
+/* Header & Barra de Progresso */
+.diag-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(9, 8, 9, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.diag-nav-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+
+.diag-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-main);
+  transition: opacity 0.2s var(--ease-apple);
+}
+
+.diag-brand:hover {
+  opacity: 0.8;
+}
+
+.diag-brand-text {
+  font: 700 13px/1 "Poppins", sans-serif;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.diag-step-counter {
+  font: 600 10.5px/1 "Poppins", sans-serif;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(244, 242, 243, 0.05);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.diag-progress-bar-container {
+  width: 100%;
+  height: 2px;
+  background: rgba(244, 242, 243, 0.05);
+  position: relative;
+}
+
+.diag-progress-bar {
+  height: 100%;
+  background: var(--white-smoke);
+  box-shadow: 0 0 10px rgba(244, 242, 243, 0.5);
+  transition: width 0.4s var(--ease-apple);
+}
+
+/* Container Principal */
+.diag-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: clamp(36px, 6vh, 64px) 0;
+  position: relative;
+  z-index: 1;
+}
+
+.diag-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: clamp(28px, 5vw, 48px);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  position: relative;
+  min-height: 440px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Kicker & Títulos */
+.diag-kicker {
+  font: 600 10.5px/1 "Poppins", sans-serif;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+}
+
+.diag-title {
+  font: 800 clamp(22px, 3.2vw, 32px)/1.2 "Archivo", "Poppins", sans-serif;
+  letter-spacing: -0.025em;
+  color: var(--white-smoke);
+  margin-bottom: 10px;
+}
+
+.diag-sub {
+  font: 400 clamp(13.5px, 1.2vw, 15px)/1.6 "Poppins", sans-serif;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+/* Transições de Etapas (Multi-step) */
+.diag-step {
+  display: none;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.35s var(--ease-apple), transform 0.35s var(--ease-apple);
+}
+
+.diag-step.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Inputs de Texto & Textarea */
+.diag-text-input,
+.diag-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  color: var(--white-smoke);
+  font: 400 15px/1.5 "Poppins", sans-serif;
+  outline: none;
+  transition: all 0.25s var(--ease-apple);
+}
+
+.diag-text-input:focus,
+.diag-textarea:focus {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--border-active);
+  box-shadow: 0 0 0 1px var(--white-smoke);
+}
+
+.diag-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Opções de Seleção Única e Múltipla */
+.diag-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.diag-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diag-opt {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  text-align: left;
+  color: var(--white-smoke);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.22s var(--ease-apple);
+  position: relative;
+}
+
+.diag-opt:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--border-active);
+  transform: translateY(-1.5px);
+}
+
+.diag-opt.selected {
+  background: rgba(244, 242, 243, 0.12);
+  border-color: var(--white-smoke);
+  box-shadow: 0 0 16px rgba(244, 242, 243, 0.08);
+}
+
+.diag-opt b {
+  font: 600 14.5px/1.3 "Poppins", sans-serif;
+  color: var(--white-smoke);
+}
+
+.diag-opt span {
+  font: 400 12.5px/1.5 "Poppins", sans-serif;
+  color: var(--text-muted);
+}
+
+/* Campo Condicional (Indicação) */
+.diag-conditional-box {
+  margin-top: 18px;
+  padding: 20px;
+  background: rgba(244, 242, 243, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  animation: fadeIn 0.3s var(--ease-apple);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.diag-field-lbl {
+  display: block;
+  font: 500 12px/1 "Poppins", sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+/* Formulário Final */
+.diag-final-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diag-form-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.diag-consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.diag-consent-label input {
+  margin-top: 3px;
+  accent-color: var(--white-smoke);
+}
+
+/* Barra de Ações Inferior */
+.diag-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.diag-btn-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--white-smoke);
+  color: var(--black);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 14px 28px;
+  font: 700 12px/1 "Poppins", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s var(--ease-apple);
+}
+
+.diag-btn-next:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 20px rgba(244, 242, 243, 0.2);
+}
+
+.diag-btn-back {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  padding: 12px 18px;
+  font: 500 12px/1 "Poppins", sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-apple);
+  border-radius: var(--radius-sm);
+}
+
+.diag-btn-back:hover {
+  color: var(--white-smoke);
+  border-color: var(--border-subtle);
+}
+
+.diag-kbd {
+  background: rgba(9, 8, 9, 0.15);
+  font: 600 10px monospace;
+  padding: 3px 6px;
+  border-radius: 3px;
+  color: var(--black);
+}
+
+/* Mensagens de Erro */
+.diag-error-msg {
+  color: #ff6b6b;
+  font-size: 13px;
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* Tela de Sucesso */
+.diag-success-screen {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.diag-success-icon {
+  width: 56px;
+  height: 56px;
+  background: var(--white-smoke);
+  color: var(--black);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  box-shadow: 0 0 30px rgba(244, 242, 243, 0.3);
+}
+
+.diag-success-card {
+  background: rgba(244, 242, 243, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 18px 22px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  max-width: 540px;
+  margin: 0 auto 32px;
+  text-align: left;
+}
+
+.diag-success-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.diag-btn-primary {
+  display: inline-block;
+  background: var(--white-smoke);
+  color: var(--black);
+  padding: 14px 24px;
+  font: 700 11px/1 "Poppins", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: transform 0.25s var(--ease-apple);
+}
+
+.diag-btn-primary:hover {
+  transform: translateY(-1.5px);
+}
+
+.diag-btn-secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  padding: 14px 24px;
+  font: 600 11px/1 "Poppins", sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: all 0.25s var(--ease-apple);
+}
+
+.diag-btn-secondary:hover {
+  border-color: var(--border-active);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Footer */
+.diag-footer {
+  padding: 24px 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.diag-footer .diag-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .diag-card {
+    padding: 24px 18px;
+  }
+  .diag-options-grid {
+    grid-template-columns: 1fr;
+  }
+  .diag-kbd {
+    display: none;
+  }
+  .diag-footer .diag-wrap {
+    flex-direction: column;
+    text-align: center;
+  }
+}

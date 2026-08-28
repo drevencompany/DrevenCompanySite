@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Diagnóstico Operacional &amp; Estratégico — Dreven Company</title>
+  <meta name="description" content="Mapeamento aprofundado de processos, gargalos operacionais e arquitetura de produto com IA aplicada — Dreven Company.">
+  <meta name="robots" content="noindex, nofollow">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/monogram.png">
+  <link rel="stylesheet" href="diagnostico.css">
+</head>
+<body>
+  <div class="diag-bg-noise" aria-hidden="true"></div>
+  <div class="diag-ambient-glow" aria-hidden="true"></div>
+
+  <!-- Top Navigation & Progress Header -->
+  <header class="diag-header">
+    <div class="diag-wrap diag-nav-wrap">
+      <a href="/" class="diag-brand" aria-label="Dreven Company Início">
+        <img src="assets/monogram.png" alt="Dreven Monograma" class="diag-logo" width="28" height="22">
+        <span class="diag-brand-text">DREVEN CO.</span>
+      </a>
+      
+      <div class="diag-progress-info">
+        <span class="diag-step-counter" id="step-counter">ETAPA 01 DE 13</span>
+      </div>
+    </div>
+    
+    <!-- Barra de Progresso Fina -->
+    <div class="diag-progress-bar-container">
+      <div class="diag-progress-bar" id="progress-bar" style="width: 7.69%;"></div>
+    </div>
+  </header>
+
+  <!-- Main Multi-Step Flow -->
+  <main class="diag-main">
+    <div class="diag-wrap">
+      
+      <div class="diag-card" id="form-container">
+        
+        <!-- Kicker Superior -->
+        <div class="diag-kicker" id="diag-kicker">Diagnóstico de Operação &amp; Engenharia</div>
+        
+        <!-- Step 1: Nome da Empresa -->
+        <section class="diag-step active" data-step="1">
+          <h1 class="diag-title">Qual é o nome da sua empresa ou projeto?</h1>
+          <p class="diag-sub">Identificação inicial para personalizarmos o seu mapeamento.</p>
+          
+          <div class="diag-input-group">
+            <input type="text" id="input-company" class="diag-text-input" placeholder="Ex: Clínica Alpha, Nexus Tech, Dr. Ricardo Santos..." autofocus autocomplete="organization">
+          </div>
+        </section>
+
+        <!-- Step 2: Segmento de Atuação -->
+        <section class="diag-step" data-step="2">
+          <h2 class="diag-title">Em qual segmento você atua?</h2>
+          <p class="diag-sub">Selecione o nicho principal da sua operação.</p>
+          
+          <div class="diag-options-grid single-select" data-field="segment">
+            <button type="button" class="diag-opt" data-value="Saúde & Medicina"><span>Saúde &amp; Medicina (Clínicas, Médicos, Terapeutas)</span></button>
+            <button type="button" class="diag-opt" data-value="Tecnologia, SaaS & Softwares"><span>Tecnologia, SaaS &amp; Softwares</span></button>
+            <button type="button" class="diag-opt" data-value="Consultoria & Serviços B2B"><span>Consultoria &amp; Serviços B2B</span></button>
+            <button type="button" class="diag-opt" data-value="Serviços Jurídicos & Advocacia"><span>Serviços Jurídicos &amp; Advocacia</span></button>
+            <button type="button" class="diag-opt" data-value="Finanças & Investimentos"><span>Finanças &amp; Investimentos</span></button>
+            <button type="button" class="diag-opt" data-value="E-commerce & Varejo"><span>E-commerce &amp; Varejo Digital</span></button>
+            <button type="button" class="diag-opt" data-value="Outro Segmento"><span>Outro Segmento</span></button>
+          </div>
+        </section>
+
+        <!-- Step 3: Momento Atual -->
+        <section class="diag-step" data-step="3">
+          <h2 class="diag-title">Qual é o momento atual da sua operação?</h2>
+          <p class="diag-sub">Nos ajuda a entender o ponto de partida técnico.</p>
+          
+          <div class="diag-options-list single-select" data-field="moment">
+            <button type="button" class="diag-opt" data-value="Já temos site/sistema mas virou gargalo">
+              <b>Já temos site ou sistema, mas virou gargalo</b>
+              <span>A estrutura atual não converte, é lenta ou ninguém mais consegue manter o código.</span>
+            </button>
+            <button type="button" class="diag-opt" data-value="Processos manuais exigem produto próprio">
+              <b>A operação cresceu e os processos manuais travaram o time</b>
+              <span>Dependemos de planilhas, WhatsApp e rotinas manuais que consomem horas.</span>
+            </button>
+            <button type="button" class="diag-opt" data-value="Começando do zero com arquitetura sólida">
+              <b>Estamos começando um projeto ou produto do zero</b>
+              <span>Queremos construir a base correta desde o primeiro dia, sem atalhos ou retrabalho.</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Step 4: Gargalo Principal -->
+        <section class="diag-step" data-step="4">
+          <h2 class="diag-title">Qual é o principal problema que mais limita seu crescimento hoje?</h2>
+          <p class="diag-sub">O desafio prioritário que você precisa ver resolvido.</p>
+          
+          <div class="diag-options-list single-select" data-field="bottleneck">
+            <button type="button" class="diag-opt" data-value="Conversão baixa e presença fraca">
+              <b>Presença digital que não converte</b>
+              <span>Visitantes chegam, mas não viram leads qualificados ou clientes reais.</span>
+            </button>
+            <button type="button" class="diag-opt" data-value="Processos manuais e retrabalho">
+              <b>Processos manuais repetitivos e retrabalho da equipe</b>
+              <span>Rotinas manuais de atendimento, triagem ou agendamento que tomam tempo excessivo.</span>
+            </button>
+            <button type="button" class="diag-opt" data-value="Ferramentas e dados desconectados">
+              <b>Ferramentas e dados desconectados</b>
+              <span>Informações espalhadas em vários sistemas que não conversam entre si.</span>
+            </button>
+            <button type="button" class="diag-opt" data-value="Falta de IA prática e automatizada">
+              <b>Falta de Inteligência Artificial aplicada</b>
+              <span>Sabemos que a IA pode otimizar a operação, mas falta método e engenharia real.</span>
+            </button>
+            <button type="button" class="diag-opt" data-value="Falta de plataforma/app próprio">
+              <b>Necessidade de uma plataforma ou aplicativo próprio</b>
+              <span>Exigência de um sistema web/mobile sob medida para pacientes ou clientes.</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Step 5: Como Funciona Hoje (Texto Aberto) -->
+        <section class="diag-step" data-step="5">
+          <h2 class="diag-title">Como esse processo funciona hoje, do começo ao fim?</h2>
+          <p class="diag-sub">Quem faz, quais ferramentas usam e o que acontece em cada etapa. Pode escrever do seu jeito.</p>
+          
+          <div class="diag-input-group">
+            <textarea id="input-process-desc" class="diag-textarea" rows="5" placeholder="Ex: O cliente entra em contato no WhatsApp, uma pessoa da equipe anota em uma planilha, depois precisamos cobrar manualmente e transferir os dados para outro sistema..."></textarea>
+          </div>
+        </section>
+
+        <!-- Step 6: Onde Fica a Informação (Multi-Select) -->
+        <section class="diag-step" data-step="6">
+          <h2 class="diag-title">Onde as informações desse fluxo ficam guardadas hoje?</h2>
+          <p class="diag-sub">Selecione todas as ferramentas ou locais que se aplicam.</p>
+          
+          <div class="diag-options-grid multi-select" data-field="data_location">
+            <button type="button" class="diag-opt" data-value="Planilhas (Excel / Google Sheets)"><span>Planilhas (Excel / Sheets)</span></button>
+            <button type="button" class="diag-opt" data-value="WhatsApp / Conversas"><span>WhatsApp / Mensagens</span></button>
+            <button type="button" class="diag-opt" data-value="CRM ou ERP Comercial"><span>CRM ou ERP Comercial</span></button>
+            <button type="button" class="diag-opt" data-value="E-mails"><span>E-mails</span></button>
+            <button type="button" class="diag-opt" data-value="Sistema Próprio Legado"><span>Sistema Próprio / Legado</span></button>
+            <button type="button" class="diag-opt" data-value="Papel / Cabeça de alguém"><span>Papel / Na cabeça de alguém</span></button>
+          </div>
+        </section>
+
+        <!-- Step 7: Frequência -->
+        <section class="diag-step" data-step="7">
+          <h2 class="diag-title">Com que frequência esse gargalo gera atritos ou atrasos?</h2>
+          <p class="diag-sub">A recorrência do impacto no dia a dia.</p>
+          
+          <div class="diag-options-list single-select" data-field="frequency">
+            <button type="button" class="diag-opt" data-value="Várias vezes ao dia"><b>Várias vezes ao dia</b><span>Impacto constante no fluxo de trabalho.</span></button>
+            <button type="button" class="diag-opt" data-value="Todo dia"><b>Todo dia</b><span>Faz parte da rotina diária da empresa.</span></button>
+            <button type="button" class="diag-opt" data-value="Algumas vezes por semana"><b>Algumas vezes por semana</b><span>Ocorre com frequência relevante.</span></button>
+            <button type="button" class="diag-opt" data-value="Semanal ou Esporádico"><b>Esporádico / Semanal</b><span>Acontece pontualmente em momentos específicos.</span></button>
+          </div>
+        </section>
+
+        <!-- Step 8: Consequências do Atraso -->
+        <section class="diag-step" data-step="8">
+          <h2 class="diag-title">O que costuma acontecer quando esse processo falha ou atrasa?</h2>
+          <p class="diag-sub">O custo direto da ineficiência atual.</p>
+          
+          <div class="diag-options-list single-select" data-field="impact">
+            <button type="button" class="diag-opt" data-value="Perda de vendas ou clientes"><b>Perda direta de vendas ou clientes</b><span>Oportunidades esfriam ou desistem pela demora.</span></button>
+            <button type="button" class="diag-opt" data-value="Retrabalho excessivo da equipe"><b>Alguém da equipe precisa refazer o trabalho</b><span>Horas desperdiçadas corrigindo erros manuais.</span></button>
+            <button type="button" class="diag-opt" data-value="Cliente percebe e reclama"><b>O cliente percebe a falha e reclama</b><span>Prejuízo direto na percepção de qualidade e autoridade.</span></button>
+            <button type="button" class="diag-opt" data-value="Sobra tudo para o gestor/fundador"><b>Sobra tudo para uma pessoa só resolver</b><span>Centralização no decisor que trava o crescimento.</span></button>
+          </div>
+        </section>
+
+        <!-- Step 9: Tentativas Anteriores -->
+        <section class="diag-step" data-step="9">
+          <h2 class="diag-title">Vocês já tentaram resolver isso de alguma forma?</h2>
+          <p class="diag-sub">Histórico do que já foi experimentado na empresa.</p>
+          
+          <div class="diag-options-list single-select" data-field="previous_attempts">
+            <button type="button" class="diag-opt" data-value="Primeira vez que olhamos a fundo"><b>Não, é a primeira vez que olhamos para isso estruturadamente</b></button>
+            <button type="button" class="diag-opt" data-value="Tentamos ferramentas prontas sem sucesso"><b>Tentamos ferramentas prontas de mercado, mas não atenderam</b></button>
+            <button type="button" class="diag-opt" data-value="Equipe interna tentou montar"><b>Alguém da equipe interna tentou montar algo, mas faltou braço</b></button>
+            <button type="button" class="diag-opt" data-value="Contratamos terceiros e não funcionou"><b>Contratamos uma agência ou desenvolvedor e não deu certo</b></button>
+            <button type="button" class="diag-opt" data-value="Usamos IA sem método"><b>Usamos ChatGPT ou ferramentas de IA de forma avulsa e sem método</b></button>
+          </div>
+        </section>
+
+        <!-- Step 10: Tomada de Decisão -->
+        <section class="diag-step" data-step="10">
+          <h2 class="diag-title">Além de você, quem mais participa de uma decisão dessas?</h2>
+          <p class="diag-sub">Composição dos envolvidos na aprovação estratégica.</p>
+          
+          <div class="diag-options-list single-select" data-field="decision_makers">
+            <button type="button" class="diag-opt" data-value="Só eu decido"><b>Apenas eu decido</b></button>
+            <button type="button" class="diag-opt" data-value="Eu e sócio(s)"><b>Eu e mais um ou mais sócios</b></button>
+            <button type="button" class="diag-opt" data-value="Diretoria ou Conselho"><b>Preciso apresentar para a diretoria / conselho</b></button>
+            <button type="button" class="diag-opt" data-value="Outras áreas (TI/Jurídico)"><b>Exige aprovação de outras áreas técnicas ou jurídicas</b></button>
+          </div>
+        </section>
+
+        <!-- Step 11: Prazo e Prioridade -->
+        <section class="diag-step" data-step="11">
+          <h2 class="diag-title">Qual é a expectativa de prazo para ver essa solução em produção?</h2>
+          <p class="diag-sub">Urgência de implementação para a sua operação.</p>
+          
+          <div class="diag-options-list single-select" data-field="timeline">
+            <button type="button" class="diag-opt" data-value="Imediato / Máxima Prioridade"><b>Imediato / Alta Prioridade</b><span>Queremos iniciar e ver rodando o mais rápido possível.</span></button>
+            <button type="button" class="diag-opt" data-value="Nos próximos 30 a 60 dias"><b>Nos próximos 30 a 60 dias</b><span>Tempo confortável para arquitetar e construir com rigor.</span></button>
+            <button type="button" class="diag-opt" data-value="Próximo trimestre"><b>Próximo trimestre</b><span>Planejamento para o próximo ciclo de crescimento.</span></button>
+            <button type="button" class="diag-opt" data-value="Mapeamento exploratório"><b>Mapeamento exploratório</b><span>Estamos levantando o cenário antes de definir datas.</span></button>
+          </div>
+        </section>
+
+        <!-- Step 12: Origem & Indicação Condicional -->
+        <section class="diag-step" data-step="12">
+          <h2 class="diag-title">Como você conheceu a Dreven Company?</h2>
+          <p class="diag-sub">Importante para entendermos a procedência do seu contato.</p>
+          
+          <div class="diag-options-grid single-select" data-field="channel">
+            <button type="button" class="diag-opt" data-value="Instagram"><span>Instagram</span></button>
+            <button type="button" class="diag-opt" data-value="Indicação / Recomendação" id="opt-referral"><span>Indicação / Recomendação</span></button>
+            <button type="button" class="diag-opt" data-value="LinkedIn"><span>LinkedIn</span></button>
+            <button type="button" class="diag-opt" data-value="YouTube"><span>YouTube</span></button>
+            <button type="button" class="diag-opt" data-value="Google / Pesquisa"><span>Google / Pesquisa</span></button>
+            <button type="button" class="diag-opt" data-value="Outro Canal"><span>Outro Canal</span></button>
+          </div>
+
+          <!-- Campo Condicional que se abre dinamicamente -->
+          <div class="diag-conditional-box" id="referral-box" style="display: none;">
+            <label class="diag-field-lbl" for="input-referrer">Quem indicou você para a Dreven Company?</label>
+            <input type="text" id="input-referrer" class="diag-text-input" placeholder="Nome da pessoa, cliente ou empresa que te indicou...">
+          </div>
+        </section>
+
+        <!-- Step 13: Dados Finais de Contato -->
+        <section class="diag-step" data-step="13">
+          <h2 class="diag-title">Onde devemos apresentar o diagnóstico e a proposta?</h2>
+          <p class="diag-sub">Entraremos em contato diretamente com você com a devolutiva estruturada.</p>
+          
+          <div class="diag-final-form">
+            <div class="diag-form-row">
+              <label class="diag-field-lbl" for="input-name">Seu Nome Completo</label>
+              <input type="text" id="input-name" class="diag-text-input" placeholder="Daniel Santos" required autocomplete="name">
+            </div>
+
+            <div class="diag-form-row">
+              <label class="diag-field-lbl" for="input-role">Seu Cargo / Função na Empresa</label>
+              <input type="text" id="input-role" class="diag-text-input" placeholder="Ex: Fundador, Diretor de Operações, Médico Titular, CEO...">
+            </div>
+
+            <div class="diag-form-row">
+              <label class="diag-field-lbl" for="input-phone">WhatsApp Corporativo com DDD</label>
+              <input type="tel" id="input-phone" class="diag-text-input" placeholder="(41) 99999-9999" required autocomplete="tel">
+            </div>
+
+            <div class="diag-form-row">
+              <label class="diag-field-lbl" for="input-email">E-mail Profissional</label>
+              <input type="email" id="input-email" class="diag-text-input" placeholder="seuemail@empresa.com" required autocomplete="email">
+            </div>
+
+            <label class="diag-consent-label">
+              <input type="checkbox" id="consent-check" checked required>
+              <span>Concordo em receber o diagnóstico estratégico e o contato técnico da Dreven Company.</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Success Screen -->
+        <section class="diag-step diag-success-screen" id="success-screen">
+          <div class="diag-success-icon">✓</div>
+          <h2 class="diag-title">Diagnóstico Recebido com Rigor.</h2>
+          <p class="diag-sub" style="max-width: 540px; margin: 0 auto 24px;">
+            Suas respostas foram registradas no nosso sistema. <strong>Daniel M. Santos</strong> e a equipe técnica da Dreven Company farão a leitura detalhada do seu cenário operacional.
+          </p>
+          <div class="diag-success-card">
+            <p><strong>Próximo Passo:</strong> Entraremos em contato via WhatsApp e e-mail com a devolutiva técnica e a recomendação de arquitetura de solução sob medida.</p>
+          </div>
+          <div class="diag-success-actions">
+            <a href="/" class="diag-btn-secondary">Voltar ao Site Oficial</a>
+            <a href="https://wa.me/5541920046931" target="_blank" rel="noopener noreferrer" class="diag-btn-primary">Falar com Fundador no WhatsApp</a>
+          </div>
+        </section>
+
+        <!-- Navigation Buttons Bottom Bar -->
+        <div class="diag-actions-bar" id="actions-bar">
+          <button type="button" class="diag-btn-back" id="btn-back" style="visibility: hidden;">Voltar</button>
+          <button type="button" class="diag-btn-next" id="btn-next">
+            <span id="btn-next-text">Continuar</span>
+            <kbd class="diag-kbd" id="btn-kbd">Enter ↵</kbd>
+          </button>
+        </div>
+
+        <div class="diag-error-msg" id="diag-error" style="display: none;"></div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="diag-footer">
+    <div class="diag-wrap">
+      <span>Dreven Company &copy; 2026 · Diagnóstico de Engenharia &amp; Estratégia</span>
+      <span>Curitiba, Paraná, Brasil</span>
+    </div>
+  </footer>
+
+  <script src="diagnostico.js"></script>
+</body>
+</html>

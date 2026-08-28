@@ -784,6 +784,21 @@
 
     <!-- Corpo do Dashboard -->
     <main class="admin-body">
+
+      <!-- Abas de Navegação do Dashboard -->
+      <div class="admin-tabs-nav">
+        <button type="button" class="admin-tab-btn active" id="tab-leads-btn" data-tab="leads">
+          <span class="tab-badge-icon">👥</span>
+          <span>Leads do Site</span>
+          <span class="tab-count" id="count-leads-tab">0</span>
+        </button>
+        <button type="button" class="admin-tab-btn" id="tab-briefings-btn" data-tab="briefings">
+          <span class="tab-badge-icon">📋</span>
+          <span>Diagnósticos &amp; Briefings</span>
+          <span class="tab-count" id="count-briefings-tab">0</span>
+        </button>
+      </div>
+
       
       <!-- KPIs / Métricas Rápidas -->
       <section class="admin-kpis">
@@ -958,7 +973,38 @@
 </div>
 
 <!-- Toast Feedback -->
-<div id="admin-toast" class="admin-toast" role="status">
+
+  <!-- Modal: Visualizador Completo de Diagnóstico & Briefing -->
+  <div id="admin-modal-briefing" class="admin-submodal" role="dialog" aria-modal="true" aria-label="Diagnóstico Completo">
+    <div class="admin-submodal-box" style="max-width: 720px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="admin-submodal-header">
+        <div>
+          <span class="brand-badge" style="margin-bottom: 6px; display: inline-block;">DIAGNÓSTICO ESTRATÉGICO</span>
+          <h3 id="briefing-modal-title" style="font-size: 20px; font-weight: 800; color: var(--ink); margin: 0;">Empresa</h3>
+          <span id="briefing-modal-sub" style="font-size: 13px; color: var(--mid);">Decisor &amp; Segmento</span>
+        </div>
+        <button id="admin-close-briefing" class="admin-btn-ghost" style="font-size: 20px; padding: 4px 10px;">✕</button>
+      </div>
+      <div class="admin-submodal-body" id="briefing-modal-content" style="overflow-y: auto; padding: 20px 24px; flex: 1;">
+        <!-- Conteúdo dinâmico gerado pelo JS -->
+      </div>
+      <div class="admin-submodal-footer" style="display: flex; justify-content: space-between; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--line);">
+        <button type="button" id="admin-copy-briefing-btn" class="admin-btn admin-btn-secondary">
+          <span>📋 Copiar Briefing Formatado</span>
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <a id="briefing-wpp-btn" href="#" target="_blank" class="admin-btn admin-btn-primary">
+            <span>Chamar no WhatsApp</span>
+          </a>
+          <button type="button" id="admin-close-briefing-btn2" class="admin-btn admin-btn-secondary">
+            <span>Fechar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-toast" class="admin-toast" role="status">
   <span id="admin-toast-icon">✓</span>
   <span id="admin-toast-text">Ação executada com sucesso.</span>
 </div>

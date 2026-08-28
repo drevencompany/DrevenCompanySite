@@ -337,22 +337,18 @@
   /* ── 10 · PAINEL ADMINISTRATIVO & GESTÃO DE LEADS ────────────── */
   const AdminDashboard = (function () {
     const STORAGE_KEY = 'dreven_admin_leads';
+    const BRIEFINGS_STORAGE_KEY = 'dreven_admin_briefings';
     const AUTH_KEY = 'dreven_admin_logged';
+    let currentTab = 'leads'; // 'leads' ou 'briefings'
+    let currentBriefingData = null;
 
     function getLocalLeads() {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         let leads = stored ? JSON.parse(stored) : [];
-        
-        // Remove quaisquer leads mock/demonstrativos antigos se existirem
         if (Array.isArray(leads)) {
           const mockIds = new Set(['lead_1714102001', 'lead_1714102002', 'lead_1714102003']);
-          const cleanLeads = leads.filter(l => !mockIds.has(l.id));
-          if (cleanLeads.length !== leads.length) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanLeads));
-            return cleanLeads;
-          }
-          return cleanLeads;
+          return leads.filter(l => !mockIds.has(l.id));
         }
         return [];
       } catch (err) {
@@ -368,13 +364,36 @@
       }
     }
 
+    function getLocalBriefings() {
+      try {
+        const stored = localStorage.getItem(BRIEFINGS_STORAGE_KEY);
+        let briefings = stored ? JSON.parse(stored) : [];
+        return Array.isArray(briefings) ? briefings : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function setLocalBriefings(briefings) {
+      try {
+        localStorage.setItem(BRIEFINGS_STORAGE_KEY, JSON.stringify(briefings));
+      } catch (err) {
+        console.error('Erro ao salvar briefings no localStorage:', err);
+      }
+    }
+
     function saveLeadLocal(lead) {
       const leads = getLocalLeads();
       leads.unshift(lead);
       setLocalLeads(leads);
-      if (isLoggedIn()) {
-        render();
-      }
+      if (isLoggedIn()) render();
+    }
+
+    function saveBriefingLocal(briefing) {
+      const briefings = getLocalBriefings();
+      briefings.unshift(briefing);
+      setLocalBriefings(briefings);
+      if (isLoggedIn()) render();
     }
 
     function isLoggedIn() {
@@ -433,7 +452,7 @@
       if (overlay) overlay.classList.remove('open');
       if (floating) floating.style.display = 'none';
       lockScroll(false);
-      showToast('Sessão administrativa encerrada.');
+      showToast('Sessão encerrada com sucesso.', 'ℹ');
     }
 
     async function syncWithServer() {
@@ -441,380 +460,426 @@
         const res = await fetch('/api/leads');
         if (res.ok) {
           const data = await res.json();
-          if (data.leads && Array.isArray(data.leads) && data.leads.length > 0) {
-            const local = getLocalLeads();
-            const localIds = new Set(local.map(l => l.id));
-            let addedCount = 0;
-            data.leads.forEach(serverLead => {
-              if (!localIds.has(serverLead.id)) {
-                local.unshift(serverLead);
-                addedCount++;
-              }
-            });
-            if (addedCount > 0) {
-              setLocalLeads(local);
-              render();
-            }
+          if (data.success && Array.isArray(data.leads)) {
+            setLocalLeads(data.leads);
+            render();
           }
         }
-      } catch (e) {
-        // Ignora caso offline ou estático
-      }
+      } catch (err) {}
     }
 
-    function formatPhoneDigits(phone) {
-      if (!phone) return '';
-      const digits = String(phone).replace(/\D/g, '');
-      if (!digits) return '';
-      return digits.startsWith('55') ? digits : '55' + digits;
+    function renderKPIs(leads, briefings) {
+      const totalEl = document.getElementById('kpi-total-val');
+      const newEl = document.getElementById('kpi-new-val');
+      const contactEl = document.getElementById('kpi-contact-val');
+      const wonEl = document.getElementById('kpi-won-val');
+      const tabLeadsCount = document.getElementById('count-leads-tab');
+      const tabBriefingsCount = document.getElementById('count-briefings-tab');
+
+      if (tabLeadsCount) tabLeadsCount.textContent = leads.length;
+      if (tabBriefingsCount) tabBriefingsCount.textContent = briefings.length;
+
+      const activeItems = currentTab === 'leads' ? leads : briefings;
+      if (!totalEl) return;
+
+      const total = activeItems.length;
+      const novos = activeItems.filter(l => (l.status || 'novo') === 'novo').length;
+      const emContato = activeItems.filter(l => ['em_contato', 'agendado', 'proposta'].includes(l.status)).length;
+      const convertidos = activeItems.filter(l => l.status === 'convertido').length;
+
+      totalEl.textContent = total;
+      if (newEl) newEl.textContent = novos;
+      if (contactEl) contactEl.textContent = emContato;
+      if (wonEl) wonEl.textContent = convertidos;
     }
 
-    function renderStatusSelect(leadId, currentStatus) {
-      const statuses = [
-        { val: 'novo', label: 'Novo Lead' },
-        { val: 'em_contato', label: 'Em Contato' },
-        { val: 'agendado', label: 'Agendado' },
-        { val: 'proposta', label: 'Proposta Enviada' },
-        { val: 'convertido', label: 'Convertido' },
-        { val: 'arquivado', label: 'Arquivado' }
-      ];
-      const safeStatus = currentStatus || 'novo';
-      const optionsHtml = statuses.map(s => 
-        `<option value="${s.val}" ${s.val === safeStatus ? 'selected' : ''}>${s.label}</option>`
-      ).join('');
-
-      return `
-        <div class="status-select-wrap">
-          <select class="status-quick-select status-${safeStatus}" onchange="AdminDashboard.updateStatus('${leadId}', this.value)" title="Clique para alterar status">
-            ${optionsHtml}
-          </select>
-        </div>
-      `;
-    }
-
-    function updateStatus(leadId, newStatus) {
-      const leads = getLocalLeads();
-      const index = leads.findIndex(l => l.id === leadId);
-      if (index !== -1) {
-        leads[index].status = newStatus;
-        leads[index].updatedAt = new Date().toISOString();
-        setLocalLeads(leads);
-        render();
-        showToast('Status atualizado.');
-
-        fetch(`/api/leads/${leadId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        }).catch(() => {});
-      }
-    }
-
-    function render() {
-      const leads = getLocalLeads();
-      const searchVal = (document.getElementById('admin-search-input')?.value || '').toLowerCase().trim();
-      const filterStatus = document.getElementById('admin-filter-status')?.value || 'todos';
-      const filterSegment = document.getElementById('admin-filter-segment')?.value || 'todos';
-
-      // Atualiza KPIs
-      const total = leads.length;
-      const novos = leads.filter(l => (l.status || 'novo') === 'novo').length;
-      const emAtendimento = leads.filter(l => ['em_contato', 'agendado', 'proposta'].includes(l.status)).length;
-      const convertidos = leads.filter(l => l.status === 'convertido').length;
-
-      const elTotal = document.getElementById('kpi-total-val');
-      const elNovos = document.getElementById('kpi-new-val');
-      const elAtend = document.getElementById('kpi-contact-val');
-      const elWon = document.getElementById('kpi-won-val');
-
-      if (elTotal) elTotal.textContent = total;
-      if (elNovos) elNovos.textContent = novos;
-      if (elAtend) elAtend.textContent = emAtendimento;
-      if (elWon) elWon.textContent = convertidos;
-
-      // Filtragem
-      const filtered = leads.filter(lead => {
-        const leadStatus = lead.status || 'novo';
-        const matchesSearch = !searchVal ||
-          (lead.name && lead.name.toLowerCase().includes(searchVal)) ||
-          (lead.email && lead.email.toLowerCase().includes(searchVal)) ||
-          (lead.phone && lead.phone.includes(searchVal)) ||
-          (lead.segment && lead.segment.toLowerCase().includes(searchVal)) ||
-          (lead.notes && lead.notes.toLowerCase().includes(searchVal));
-
-        const matchesStatus = filterStatus === 'todos' || leadStatus === filterStatus;
-        const matchesSegment = filterSegment === 'todos' || (lead.segment && lead.segment.toLowerCase().includes(filterSegment.toLowerCase()));
-
-        return matchesSearch && matchesStatus && matchesSegment;
-      });
-
-      const tbody = document.getElementById('admin-leads-tbody');
+    function renderTable() {
+      const tbody = document.getElementById('admin-table-body');
+      const thead = document.querySelector('.admin-table thead tr');
       const emptyState = document.getElementById('admin-empty-state');
+      const searchInput = document.getElementById('admin-search-input');
+      const filterStatus = document.getElementById('admin-filter-status');
+      const filterSegment = document.getElementById('admin-filter-segment');
+
       if (!tbody) return;
 
+      const leads = getLocalLeads();
+      const briefings = getLocalBriefings();
+      renderKPIs(leads, briefings);
+
+      const items = currentTab === 'leads' ? leads : briefings;
+      const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+      const statusFilter = filterStatus ? filterStatus.value : 'todos';
+      const segmentFilter = filterSegment ? filterSegment.value : 'todos';
+
+      // Atualizar Cabeçalho da Tabela baseado na aba ativa
+      if (thead) {
+        if (currentTab === 'leads') {
+          thead.innerHTML = `
+            <th>Lead / Contato</th>
+            <th>Segmento</th>
+            <th>WhatsApp</th>
+            <th>Origem</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th style="text-align: right;">Ações</th>
+          `;
+        } else {
+          thead.innerHTML = `
+            <th>Empresa / Decisor</th>
+            <th>Segmento</th>
+            <th>Gargalo Principal</th>
+            <th>Origem &amp; Indicação</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th style="text-align: right;">Ações</th>
+          `;
+        }
+      }
+
+      // Filtragem
+      const filtered = items.filter(item => {
+        const name = (item.name || '').toLowerCase();
+        const email = (item.email || '').toLowerCase();
+        const phone = (item.phone || '').toLowerCase();
+        const segment = (item.segment || '').toLowerCase();
+        const company = (item.company || '').toLowerCase();
+        const referrer = (item.referrer || '').toLowerCase();
+
+        const matchQuery = !query || name.includes(query) || email.includes(query) || phone.includes(query) || segment.includes(query) || company.includes(query) || referrer.includes(query);
+        const matchStatus = statusFilter === 'todos' || (item.status || 'novo') === statusFilter;
+        const matchSegment = segmentFilter === 'todos' || segment.includes(segmentFilter.toLowerCase());
+
+        return matchQuery && matchStatus && matchSegment;
+      });
+
+      tbody.innerHTML = '';
+
       if (filtered.length === 0) {
-        tbody.innerHTML = '';
         if (emptyState) emptyState.style.display = 'block';
         return;
       }
 
       if (emptyState) emptyState.style.display = 'none';
 
-      tbody.innerHTML = filtered.map(lead => {
-        const dateStr = lead.createdAt ? new Date(lead.createdAt).toLocaleString('pt-BR', {
-          dateStyle: 'short',
-          timeStyle: 'short'
-        }) : 'Recentemente';
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        const formattedDate = new Date(item.createdAt || Date.now()).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
 
-        const phoneDigits = formatPhoneDigits(lead.phone);
-        
-        // Mensagem pronta oficial
-        const firstName = (lead.name || 'Cliente').split(' ')[0];
-        const wppMessage = `Olá, ${firstName}! Me chamo Daniel, da Dreven Company. Estou entrando em contato referente à sua solicitação de diagnóstico em nosso site. Como posso ajudar seu negócio a escalar hoje?`;
-        const wppUrl = phoneDigits ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(wppMessage)}` : '#';
+        const rawPhone = (item.phone || '').replace(/\D/g, '');
+        const wppUrl = rawPhone ? `https://wa.me/${rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone}` : '#';
 
-        const emailSubject = `Dreven Company — Diagnóstico e Alinhamento Estratégico`;
-        const emailBody = `Olá, ${lead.name}.\n\nMe chamo Daniel M. Santos, fundador e operador da Dreven Company.\n\nRecebi sua solicitação de contato referente ao segmento de ${lead.segment || 'seu negócio'}.\n\nGostaria de entender melhor suas metas atuais para apresentar a proposta ideal.\n\nAtenciosamente,\nDaniel M. Santos\nDreven Company · Curitiba, Brasil\n+55 (41) 92004-6931`;
-        const mailtoUrl = `mailto:${lead.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+        if (currentTab === 'leads') {
+          tr.innerHTML = `
+            <td>
+              <div class="lead-cell-name"><b>${item.name || 'Sem nome'}</b></div>
+              <div class="lead-cell-email"><a href="mailto:${item.email}" class="lead-email-link">${item.email || '—'}</a></div>
+            </td>
+            <td><span class="lead-cell-segment">${item.segment || 'Geral'}</span></td>
+            <td><a href="${wppUrl}" target="_blank" rel="noopener noreferrer" class="lead-phone-link">📱 ${item.phone || '—'}</a></td>
+            <td><span class="lead-cell-source">Site</span></td>
+            <td><span class="lead-status-pill status-${item.status || 'novo'}">${getStatusLabel(item.status || 'novo')}</span></td>
+            <td style="font-size: 12px; color: var(--mid);">${formattedDate}</td>
+            <td style="text-align: right;">
+              <button class="action-icon-btn edit-lead-btn" data-id="${item.id}" title="Ver e Editar">✏️</button>
+              <button class="action-icon-btn delete-lead-btn" data-id="${item.id}" title="Excluir" style="color:#d9534f;">🗑️</button>
+            </td>
+          `;
+        } else {
+          // Linha de Briefing Completo
+          const referralInfo = item.channel === 'Indicação / Recomendação' && item.referrer ? `👤 Indicação: <b>${item.referrer}</b>` : (item.channel || 'Direto');
+          tr.innerHTML = `
+            <td>
+              <div class="lead-cell-name"><b>${item.company || 'Empresa'}</b></div>
+              <div class="lead-cell-email">${item.name || 'Decisor'} (${item.role || 'Responsável'}) · <a href="mailto:${item.email}" class="lead-email-link">${item.email}</a></div>
+            </td>
+            <td><span class="lead-cell-segment">${item.segment || 'Geral'}</span></td>
+            <td><span class="lead-cell-bottleneck" style="font-size:12.5px; color:var(--ink); font-weight:500;">${item.bottleneck || 'Mapeamento Geral'}</span></td>
+            <td><span class="lead-cell-source">${referralInfo}</span></td>
+            <td><span class="lead-status-pill status-${item.status || 'novo'}">${getStatusLabel(item.status || 'novo')}</span></td>
+            <td style="font-size: 12px; color: var(--mid);">${formattedDate}</td>
+            <td style="text-align: right;">
+              <button class="action-icon-btn view-briefing-btn" data-id="${item.id}" title="Ver Briefing Completo" style="font-size:14px; font-weight:700; background:var(--ink); color:var(--bone); border-radius:3px; padding:4px 8px;">📋 Ver Briefing</button>
+              <button class="action-icon-btn delete-briefing-btn" data-id="${item.id}" title="Excluir" style="color:#d9534f; margin-left:6px;">🗑️</button>
+            </td>
+          `;
+        }
 
-        return `
-          <tr data-id="${lead.id}">
-            <td style="color: #B0B0B0; font-size: 12px; white-space: nowrap;">${dateStr}</td>
-            <td>
-              <div class="lead-name-cell">
-                <span>${lead.name}</span>
-                <span class="lead-source">${lead.source || 'Formulário do Site'}</span>
-              </div>
-            </td>
-            <td>
-              <div class="lead-contact-cell">
-                <a href="${mailtoUrl}" title="Enviar e-mail para ${lead.email}">${lead.email}</a>
-                <a href="${wppUrl}" target="_blank" rel="noopener noreferrer" title="WhatsApp">${lead.phone || 'Sem telefone'}</a>
-              </div>
-            </td>
-            <td>
-              <span class="lead-segment-badge" title="${lead.segment || 'Geral'}">${lead.segment || 'Não informado'}</span>
-            </td>
-            <td>
-              ${renderStatusSelect(lead.id, lead.status)}
-            </td>
-            <td>
-              <div class="lead-actions-cell">
-                ${phoneDigits ? `
-                  <a href="${wppUrl}" target="_blank" rel="noopener noreferrer" class="lead-action-btn action-wpp" title="Iniciar conversa no WhatsApp com mensagem pronta">
-                    <span>WhatsApp</span>
-                  </a>
-                ` : ''}
-                <a href="${mailtoUrl}" class="lead-action-btn action-email" title="Enviar e-mail de resposta">
-                  <span>E-mail</span>
-                </a>
-                <button type="button" class="lead-action-btn action-icon-only" onclick="AdminDashboard.openEditModal('${lead.id}')" title="Ver detalhes e anotações">
-                  ✏️
-                </button>
-                <button type="button" class="lead-action-btn action-icon-only action-icon-danger" onclick="AdminDashboard.requestDelete('${lead.id}')" title="Excluir lead">
-                  🗑️
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
+        tbody.appendChild(tr);
+      });
+
+      // Listeners da tabela
+      attachTableEvents();
     }
 
-    function openNewLeadModal() {
-      const modal = document.getElementById('admin-modal-newlead');
-      const form = document.getElementById('admin-form-newlead');
-      if (form) form.reset();
+    function getStatusLabel(s) {
+      const map = {
+        novo: 'Novo',
+        em_contato: 'Em Contato',
+        agendado: 'Agendado',
+        proposta: 'Proposta Enviada',
+        convertido: 'Fechado',
+        arquivado: 'Arquivado'
+      };
+      return map[s] || 'Novo';
+    }
+
+    function attachTableEvents() {
+      // Editar Lead
+      document.querySelectorAll('.edit-lead-btn').forEach(btn => {
+        btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+      });
+
+      // Ver Briefing
+      document.querySelectorAll('.view-briefing-btn').forEach(btn => {
+        btn.addEventListener('click', () => openBriefingModal(btn.dataset.id));
+      });
+
+      // Excluir Lead / Briefing
+      document.querySelectorAll('.delete-lead-btn, .delete-briefing-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const isBriefing = btn.classList.contains('delete-briefing-btn');
+          if (confirm('Deseja realmente remover este registro do painel?')) {
+            if (isBriefing) {
+              const briefings = getLocalBriefings().filter(b => b.id !== id);
+              setLocalBriefings(briefings);
+            } else {
+              const leads = getLocalLeads().filter(l => l.id !== id);
+              setLocalLeads(leads);
+            }
+            renderTable();
+            showToast('Registro excluído do painel.');
+          }
+        });
+      });
+    }
+
+    function openBriefingModal(id) {
+      const briefings = getLocalBriefings();
+      const b = briefings.find(item => item.id === id);
+      if (!b) return;
+
+      currentBriefingData = b;
+      const modal = document.getElementById('admin-modal-briefing');
+      const title = document.getElementById('briefing-modal-title');
+      const sub = document.getElementById('briefing-modal-sub');
+      const content = document.getElementById('briefing-modal-content');
+      const wppBtn = document.getElementById('briefing-wpp-btn');
+
+      if (title) title.textContent = b.company || 'Diagnóstico Estratégico';
+      if (sub) sub.textContent = `${b.name} (${b.role || 'Decisor'}) · ${b.segment}`;
+
+      const rawPhone = (b.phone || '').replace(/\D/g, '');
+      const wppUrl = rawPhone ? `https://wa.me/${rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone}` : '#';
+      if (wppBtn) wppBtn.href = wppUrl;
+
+      const locations = Array.isArray(b.data_location) ? b.data_location.join(', ') : (b.data_location || 'Não informado');
+
+      if (content) {
+        content.innerHTML = `
+          <!-- Decisor & Contato -->
+          <div class="briefing-section">
+            <div class="briefing-section-title">1. Contato &amp; Procedência</div>
+            <div class="briefing-row"><strong>Nome do Decisor:</strong> ${b.name} (${b.role || 'Não especificado'})</div>
+            <div class="briefing-row"><strong>Empresa / Operação:</strong> ${b.company || '—'}</div>
+            <div class="briefing-row"><strong>WhatsApp:</strong> <a href="${wppUrl}" target="_blank" style="color:var(--ink); font-weight:600;">${b.phone}</a></div>
+            <div class="briefing-row"><strong>E-mail:</strong> <a href="mailto:${b.email}" style="color:var(--ink);">${b.email}</a></div>
+            <div class="briefing-row"><strong>Origem do Contato:</strong> ${b.channel || 'Direto'}</div>
+            ${b.channel === 'Indicação / Recomendação' && b.referrer ? `
+              <div class="briefing-referrer-highlight">👤 Indicado por: ${b.referrer}</div>
+            ` : ''}
+          </div>
+
+          <!-- Mapeamento de Gargalos -->
+          <div class="briefing-section">
+            <div class="briefing-section-title">2. Diagnóstico Operacional</div>
+            <div class="briefing-row"><strong>Segmento:</strong> ${b.segment}</div>
+            <div class="briefing-row"><strong>Momento Atual:</strong> ${b.moment}</div>
+            <div class="briefing-row"><strong>Gargalo Principal:</strong> ${b.bottleneck}</div>
+            <div style="margin-top:10px;">
+              <strong style="display:block; margin-bottom:4px;">Como funciona hoje na prática:</strong>
+              <div class="briefing-quote">"${b.process_desc || 'Não detalhado'}"</div>
+            </div>
+            <div class="briefing-row"><strong>Onde os dados ficam:</strong> ${locations}</div>
+            <div class="briefing-row"><strong>Frequência do Gargalo:</strong> ${b.frequency}</div>
+            <div class="briefing-row"><strong>Consequência / Impacto:</strong> ${b.impact}</div>
+          </div>
+
+          <!-- Decisão & Prazos -->
+          <div class="briefing-section">
+            <div class="briefing-section-title">3. Decisão &amp; Prazos</div>
+            <div class="briefing-row"><strong>Tentativas Anteriores:</strong> ${b.previous_attempts}</div>
+            <div class="briefing-row"><strong>Quem Decide:</strong> ${b.decision_makers}</div>
+            <div class="briefing-row"><strong>Prazo de Implementação:</strong> ${b.timeline}</div>
+          </div>
+        `;
+      }
+
       if (modal) modal.classList.add('open');
     }
 
-    function closeNewLeadModal() {
-      const modal = document.getElementById('admin-modal-newlead');
-      if (modal) modal.classList.remove('open');
-    }
-
-    function openEditModal(leadId) {
+    function openEditModal(id) {
       const leads = getLocalLeads();
-      const lead = leads.find(l => l.id === leadId);
+      const lead = leads.find(l => l.id === id);
       if (!lead) return;
 
       const modal = document.getElementById('admin-modal-edit');
-      document.getElementById('edit-lead-id').value = lead.id;
-      document.getElementById('edit-lead-name').value = `${lead.name} (${lead.phone || lead.email})`;
-      document.getElementById('edit-lead-status').value = lead.status || 'novo';
-      document.getElementById('edit-lead-notes').value = lead.notes || '';
+      const nameInput = document.getElementById('edit-lead-name');
+      const emailInput = document.getElementById('edit-lead-email');
+      const phoneInput = document.getElementById('edit-lead-phone');
+      const segmentInput = document.getElementById('edit-lead-segment');
+      const statusSelect = document.getElementById('edit-lead-status');
+      const notesInput = document.getElementById('edit-lead-notes');
 
-      const delBtn = document.getElementById('admin-delete-lead-btn');
-      if (delBtn) {
-        delBtn.onclick = (e) => {
+      if (nameInput) nameInput.value = lead.name || '';
+      if (emailInput) emailInput.value = lead.email || '';
+      if (phoneInput) phoneInput.value = lead.phone || '';
+      if (segmentInput) segmentInput.value = lead.segment || '';
+      if (statusSelect) statusSelect.value = lead.status || 'novo';
+      if (notesInput) notesInput.value = lead.notes || '';
+
+      const form = document.getElementById('admin-form-edit');
+      if (form) {
+        form.onsubmit = (e) => {
           e.preventDefault();
-          closeEditModal();
-          requestDelete(lead.id);
+          lead.name = nameInput.value.trim();
+          lead.email = emailInput.value.trim();
+          lead.phone = phoneInput.value.trim();
+          lead.segment = segmentInput.value.trim();
+          lead.status = statusSelect.value;
+          lead.notes = notesInput.value.trim();
+          setLocalLeads(leads);
+          if (modal) modal.classList.remove('open');
+          renderTable();
+          showToast('Lead atualizado com sucesso.');
         };
       }
 
       if (modal) modal.classList.add('open');
     }
 
-    function closeEditModal() {
-      const modal = document.getElementById('admin-modal-edit');
-      if (modal) modal.classList.remove('open');
-    }
+    function initEvents() {
+      // Alternância de Abas
+      const tabLeads = document.getElementById('tab-leads-btn');
+      const tabBriefings = document.getElementById('tab-briefings-btn');
 
-    function requestDelete(leadId) {
-      const leads = getLocalLeads();
-      const lead = leads.find(l => l.id === leadId);
-      const leadName = lead ? lead.name : 'este lead';
+      if (tabLeads && tabBriefings) {
+        tabLeads.addEventListener('click', () => {
+          currentTab = 'leads';
+          tabLeads.classList.add('active');
+          tabBriefings.classList.remove('active');
+          renderTable();
+        });
 
-      const modal = document.getElementById('admin-modal-delete-confirm');
-      const targetIdInput = document.getElementById('delete-target-id');
-      const confirmText = document.getElementById('admin-delete-confirm-text');
-
-      if (targetIdInput) targetIdInput.value = leadId;
-      if (confirmText) confirmText.textContent = `Tem certeza que deseja excluir "${leadName}"? Esta ação removerá o lead do painel.`;
-      if (modal) modal.classList.add('open');
-    }
-
-    function closeDeleteModal() {
-      const modal = document.getElementById('admin-modal-delete-confirm');
-      if (modal) modal.classList.remove('open');
-    }
-
-    function executeDelete() {
-      const targetIdInput = document.getElementById('delete-target-id');
-      const leadId = targetIdInput ? targetIdInput.value : null;
-      if (!leadId) return;
-
-      let leads = getLocalLeads();
-      leads = leads.filter(l => l.id !== leadId);
-      setLocalLeads(leads);
-      render();
-      closeDeleteModal();
-      showToast('Lead excluído com sucesso.');
-
-      fetch(`/api/leads/${leadId}`, { method: 'DELETE' }).catch(() => {});
-    }
-
-    function exportCSV() {
-      const leads = getLocalLeads();
-      if (!leads.length) {
-        alert('Não há leads cadastrados para exportação.');
-        return;
+        tabBriefings.addEventListener('click', () => {
+          currentTab = 'briefings';
+          tabBriefings.classList.add('active');
+          tabLeads.classList.remove('active');
+          renderTable();
+        });
       }
 
-      const headers = ['ID', 'Data/Hora', 'Nome', 'E-mail', 'WhatsApp', 'Segmento', 'Status', 'Origem', 'Anotações'];
-      const rows = leads.map(l => [
-        `"${l.id || ''}"`,
-        `"${l.createdAt ? new Date(l.createdAt).toLocaleString('pt-BR') : ''}"`,
-        `"${(l.name || '').replace(/"/g, '""')}"`,
-        `"${(l.email || '').replace(/"/g, '""')}"`,
-        `"${(l.phone || '').replace(/"/g, '""')}"`,
-        `"${(l.segment || '').replace(/"/g, '""')}"`,
-        `"${(l.status || 'novo').replace(/"/g, '""')}"`,
-        `"${(l.source || '').replace(/"/g, '""')}"`,
-        `"${(l.notes || '').replace(/"/g, '""')}"`
-      ]);
+      // Fechar modal de briefing
+      const closeBriefingBtn = document.getElementById('admin-close-briefing');
+      const closeBriefingBtn2 = document.getElementById('admin-close-briefing-btn2');
+      const briefingModal = document.getElementById('admin-modal-briefing');
+      [closeBriefingBtn, closeBriefingBtn2].forEach(b => {
+        if (b) b.addEventListener('click', () => {
+          if (briefingModal) briefingModal.classList.remove('open');
+        });
+      });
 
-      const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `leads_dreven_company_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showToast('Exportação CSV concluída.');
+      // Copiar Briefing Formatado
+      const copyBriefingBtn = document.getElementById('admin-copy-briefing-btn');
+      if (copyBriefingBtn) {
+        copyBriefingBtn.addEventListener('click', () => {
+          if (!currentBriefingData) return;
+          const b = currentBriefingData;
+          const text = `====================================================
+DREVEN COMPANY — BRIEFING DE ENGENHARIA & DIAGNÓSTICO
+====================================================
+Empresa: ${b.company}
+Decisor: ${b.name} (${b.role || 'Responsável'})
+WhatsApp: ${b.phone}
+E-mail: ${b.email}
+Origem: ${b.channel} ${b.referrer ? `(Indicado por: ${b.referrer})` : ''}
+
+1. Segmento: ${b.segment}
+2. Momento Atual: ${b.moment}
+3. Gargalo Principal: ${b.bottleneck}
+4. Como funciona hoje: "${b.process_desc}"
+5. Onde os dados ficam: ${Array.isArray(b.data_location) ? b.data_location.join(', ') : b.data_location}
+6. Frequência do Gargalo: ${b.frequency}
+7. Consequência / Impacto: ${b.impact}
+8. Tentativas Anteriores: ${b.previous_attempts}
+9. Quem Decide: ${b.decision_makers}
+10. Prazo: ${b.timeline}
+====================================================`;
+
+          navigator.clipboard.writeText(text).then(() => {
+            showToast('Briefing copiado para a área de transferência!');
+          });
+        });
+      }
+
+      // Busca e Filtros
+      const searchInput = document.getElementById('admin-search-input');
+      const filterStatus = document.getElementById('admin-filter-status');
+      const filterSegment = document.getElementById('admin-filter-segment');
+
+      if (searchInput) searchInput.addEventListener('input', renderTable);
+      if (filterStatus) filterStatus.addEventListener('change', renderTable);
+      if (filterSegment) filterSegment.addEventListener('change', renderTable);
+
+      // Botões do Header do Admin
+      const btnRefresh = document.getElementById('admin-btn-refresh');
+      const btnMinimize = document.getElementById('admin-btn-minimize');
+      const btnLogout = document.getElementById('admin-btn-logout');
+      const floatingBtn = document.getElementById('admin-floating-btn');
+
+      if (btnRefresh) btnRefresh.addEventListener('click', () => {
+        syncWithServer();
+        renderTable();
+        showToast('Painel sincronizado.');
+      });
+
+      if (btnMinimize) btnMinimize.addEventListener('click', minimizePanel);
+      if (floatingBtn) floatingBtn.addEventListener('click', openPanel);
+      if (btnLogout) btnLogout.addEventListener('click', logout);
     }
 
-    // Inicialização de Listeners do Painel
+    function render() {
+      renderTable();
+    }
+
     function init() {
+      initEvents();
       if (isLoggedIn()) {
         const floating = document.getElementById('admin-floating-btn');
         if (floating) floating.style.display = 'inline-flex';
       }
-
-      document.getElementById('admin-floating-btn')?.addEventListener('click', openPanel);
-      document.getElementById('admin-btn-minimize')?.addEventListener('click', minimizePanel);
-      document.getElementById('admin-btn-logout')?.addEventListener('click', logout);
-      document.getElementById('admin-btn-export')?.addEventListener('click', exportCSV);
-      document.getElementById('admin-btn-refresh')?.addEventListener('click', () => {
-        syncWithServer();
-        render();
-        showToast('Lista sincronizada com sucesso.');
-      });
-
-      document.getElementById('admin-search-input')?.addEventListener('input', render);
-      document.getElementById('admin-filter-status')?.addEventListener('change', render);
-      document.getElementById('admin-filter-segment')?.addEventListener('change', render);
-
-      // Modal Novo Lead
-      document.getElementById('admin-btn-new')?.addEventListener('click', openNewLeadModal);
-      document.getElementById('admin-close-newlead')?.addEventListener('click', closeNewLeadModal);
-      document.getElementById('admin-cancel-newlead')?.addEventListener('click', closeNewLeadModal);
-      document.getElementById('admin-form-newlead')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const newLead = {
-          id: `lead_${Date.now()}`,
-          name: document.getElementById('modal-lead-name').value.trim(),
-          email: document.getElementById('modal-lead-email').value.trim(),
-          phone: document.getElementById('modal-lead-phone').value.trim(),
-          segment: document.getElementById('modal-lead-segment').value.trim() || 'Geral',
-          notes: document.getElementById('modal-lead-notes').value.trim(),
-          status: 'novo',
-          source: 'Cadastro Manual',
-          createdAt: new Date().toISOString()
-        };
-        saveLeadLocal(newLead);
-        closeNewLeadModal();
-        showToast('Novo lead cadastrado com sucesso.');
-      });
-
-      // Modal Editar Lead
-      document.getElementById('admin-close-edit')?.addEventListener('click', closeEditModal);
-      document.getElementById('admin-cancel-edit')?.addEventListener('click', closeEditModal);
-      document.getElementById('admin-form-edit')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const leadId = document.getElementById('edit-lead-id').value;
-        const status = document.getElementById('edit-lead-status').value;
-        const notes = document.getElementById('edit-lead-notes').value.trim();
-
-        const leads = getLocalLeads();
-        const index = leads.findIndex(l => l.id === leadId);
-        if (index !== -1) {
-          leads[index].status = status;
-          leads[index].notes = notes;
-          leads[index].updatedAt = new Date().toISOString();
-          setLocalLeads(leads);
-          render();
-          closeEditModal();
-          showToast('Lead atualizado com sucesso.');
-
-          fetch(`/api/leads/${leadId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status, notes })
-          }).catch(() => {});
-        }
-      });
-
-      // Modal Exclusão de Lead
-      document.getElementById('admin-cancel-delete')?.addEventListener('click', closeDeleteModal);
-      document.getElementById('admin-confirm-delete-btn')?.addEventListener('click', executeDelete);
     }
 
     return {
       init,
       login,
       logout,
+      saveLeadLocal,
+      saveBriefingLocal,
+      isLoggedIn,
       openPanel,
-      minimizePanel,
-      openEditModal,
-      requestDelete,
-      updateStatus,
-      saveLeadLocal
+      render
     };
   })();
+
+  AdminDashboard.init();
 
   // Inicia o módulo Administrativo
   window.AdminDashboard = AdminDashboard;

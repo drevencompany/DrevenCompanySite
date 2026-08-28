@@ -33,6 +33,14 @@
   ],
   "rewrites": [
     {
+      "source": "/diagnostico",
+      "destination": "/diagnostico.html"
+    },
+    {
+      "source": "/api/diagnostico",
+      "destination": "/api/diagnostico.js"
+    },
+    {
       "source": "/api/contact",
       "destination": "/api/contact.js"
     }
