@@ -94,12 +94,30 @@ npm start
 ```
 A aplicação estará disponível em `http://localhost:3000`.
 
+### Verificação e Testes Automatizados
+```bash
+# Executar suíte de testes unitários, contratos e segurança
+npm test
+
+# Executar testes estritos de segurança
+npm run test:security
+
+# Verificação completa (sintaxe, testes e auditoria)
+npm run check
+```
+
 ---
 
 ## 🚀 Implantação em Produção (Vercel)
 
 1. Conecte o repositório à **Vercel**.
 2. Configure as seguintes **Environment Variables** no painel do projeto:
+   * `GITHUB_TOKEN`: Token GitHub com permissão `gist`
+   * `GITHUB_GIST_ID`: ID do Gist de persistência
+   * `GITHUB_OAUTH_CLIENT_ID`: Client ID do GitHub OAuth App
+   * `GITHUB_OAUTH_CLIENT_SECRET`: Client Secret do GitHub OAuth App
+   * `ADMIN_GITHUB_USER_ID`: ID numérico imutável do administrador
+   * `SESSION_SECRET`: Chave secreta de assinatura HMAC
    * `SMTP_HOST`: Servidor SMTP (ex: `smtp.hostinger.com`)
    * `SMTP_PORT`: Porta segura (ex: `465`)
    * `SMTP_SECURE`: `true`
