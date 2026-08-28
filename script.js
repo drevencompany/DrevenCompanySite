@@ -339,79 +339,16 @@
     const STORAGE_KEY = 'dreven_admin_leads';
     const BRIEFINGS_STORAGE_KEY = 'dreven_admin_briefings';
     const AUTH_KEY = 'dreven_admin_logged';
-    let currentTab = 'briefings'; // Abre na aba de diagnósticos/briefings
+    let currentTab = 'briefings'; // Abre prioritariamente em Diagnósticos & Briefings
     let currentBriefingData = null;
-
-    // Seeds para garantir que nunca esteja quebrado ou zerado
-    const SEED_BRIEFINGS = [
-      {
-        id: "briefing_1724800010_d93a",
-        empresa: "MedCenter Diagnósticos Integrados",
-        company: "MedCenter Diagnósticos Integrados",
-        segmento: "Saúde & Medicina",
-        segment: "Saúde & Medicina",
-        momento: "Já temos site/sistema mas virou gargalo",
-        moment: "Já temos site/sistema mas virou gargalo",
-        gargalo_principal: "Ferramentas e dados desconectados",
-        bottleneck: "Ferramentas e dados desconectados",
-        linha_sugerida: "Linha 3 · Integrações & Engenharia",
-        descricao_livre: "Os laudos saem de um sistema legado, as recepcionistas passam para o WhatsApp manualmente e os médicos precisam consultar 3 telas diferentes para fechar o diagnóstico. Perdemos quase 2 horas por dia com digitação repetitiva.",
-        process_desc: "Os laudos saem de um sistema legado, as recepcionistas passam para o WhatsApp manualmente e os médicos precisam consultar 3 telas diferentes para fechar o diagnóstico. Perdemos quase 2 horas por dia com digitação repetitiva.",
-        ferramentas_atuais: "WhatsApp, ERP/CRM, Sistema próprio legado, Planilhas",
-        data_location: ["WhatsApp", "ERP/CRM", "Sistema próprio legado", "Planilhas"],
-        frequencia: "Todo dia",
-        frequency: "Todo dia",
-        impacto: "Retrabalho da equipe",
-        impact: "Retrabalho da equipe",
-        tentativas_anteriores: "Contratamos terceiros mas não deu certo",
-        previous_attempts: "Contratamos terceiros mas não deu certo",
-        estrutura_decisoria: "Eu e mais um sócio",
-        decision_makers: "Eu e mais um sócio",
-        prazo_esperado: "60–90 dias",
-        timeline: "60–90 dias",
-        canal_origem: "Indicação",
-        channel: "Indicação",
-        indicado_por: "Dr. Roberto Silveira (Hospital Paraná)",
-        referrer: "Dr. Roberto Silveira (Hospital Paraná)",
-        contato_nome: "Dra. Juliana Carvalho",
-        name: "Dra. Juliana Carvalho",
-        contato_cargo: "Diretora Clínica & Sócia",
-        role: "Diretora Clínica & Sócia",
-        contato_whatsapp: "(41) 99888-7766",
-        phone: "(41) 99888-7766",
-        contato_email: "juliana@medcenterdiagnosticos.com.br",
-        email: "juliana@medcenterdiagnosticos.com.br",
-        consentimento_lgpd: true,
-        consentimento_lgpd_em: "2026-08-27T20:10:00.000Z",
-        status: "novo",
-        createdAt: "2026-08-27T20:10:00.000Z"
-      }
-    ];
-
-    const SEED_LEADS = [
-      {
-        id: "lead_1724800001_s82a",
-        name: "Dr. Fernando Mendonça",
-        email: "fernando@clinicaalphasaude.med.br",
-        phone: "(41) 99123-4567",
-        segment: "Saúde & Medicina",
-        status: "em_contato",
-        source: "website_diagnostico_form",
-        createdAt: "2026-08-27T18:30:00.000Z"
-      }
-    ];
 
     function getLocalLeads() {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         let leads = stored ? JSON.parse(stored) : [];
-        if (Array.isArray(leads) && leads.length > 0) {
-          return leads;
-        }
-        setLocalLeads(SEED_LEADS);
-        return SEED_LEADS;
+        return Array.isArray(leads) ? leads : [];
       } catch (err) {
-        return SEED_LEADS;
+        return [];
       }
     }
 
@@ -425,13 +362,9 @@
       try {
         const stored = localStorage.getItem(BRIEFINGS_STORAGE_KEY);
         let briefings = stored ? JSON.parse(stored) : [];
-        if (Array.isArray(briefings) && briefings.length > 0) {
-          return briefings;
-        }
-        setLocalBriefings(SEED_BRIEFINGS);
-        return SEED_BRIEFINGS;
+        return Array.isArray(briefings) ? briefings : [];
       } catch (err) {
-        return SEED_BRIEFINGS;
+        return [];
       }
     }
 
@@ -486,8 +419,8 @@
       if (overlay) overlay.classList.add('open');
       if (floating) floating.style.display = 'none';
       lockScroll(true);
-      syncWithServer();
       render();
+      syncWithServer();
     }
 
     function minimizePanel() {
@@ -501,7 +434,7 @@
     function login() {
       sessionStorage.setItem(AUTH_KEY, 'true');
       openPanel();
-      showToast('Acesso Administrativo Autorizado. Bem-vindo, Daniel.');
+      showToast('Acesso Autorizado. Bem-vindo, Daniel.');
     }
 
     function logout() {
@@ -515,30 +448,31 @@
     }
 
     async function syncWithServer() {
-      try {
-        const res = await fetch('/api/leads');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.leads) && data.leads.length > 0) {
-            setLocalLeads(data.leads);
-          }
-        }
-      } catch (err) {}
-
+      // 1. Sincronizar Briefings da Nuvem Persistente
       try {
         const resB = await fetch('/api/diagnostico');
         if (resB.ok) {
           const dataB = await resB.json();
           if (dataB.success && Array.isArray(dataB.briefings) && dataB.briefings.length > 0) {
-            const current = getLocalBriefings();
-            const currentIds = new Set(current.map(c => c.id));
-            const newOnes = dataB.briefings.filter(b => !currentIds.has(b.id));
-            if (newOnes.length > 0) {
-              setLocalBriefings([...newOnes, ...current]);
-            }
+            setLocalBriefings(dataB.briefings);
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Erro ao sincronizar briefings:', err);
+      }
+
+      // 2. Sincronizar Leads da Nuvem Persistente
+      try {
+        const resL = await fetch('/api/leads');
+        if (resL.ok) {
+          const dataL = await resL.json();
+          if (dataL.success && Array.isArray(dataL.leads) && dataL.leads.length > 0) {
+            setLocalLeads(dataL.leads);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao sincronizar leads:', err);
+      }
 
       render();
     }
@@ -681,7 +615,7 @@
           `;
         } else {
           // Linha de Briefing Completo
-          const companyName = item.empresa || item.company || 'Empresa sem nome';
+          const companyName = item.empresa || item.company || 'Empresa';
           const decisorName = item.contato_nome || item.name || 'Decisor';
           const decisorRole = item.contato_cargo || item.role || 'Responsável';
           const decisorEmail = item.contato_email || item.email || '';
@@ -692,24 +626,24 @@
 
           let referralInfo = item.canal_origem || item.channel || 'Direto';
           if ((item.canal_origem === 'Indicação' || item.channel === 'Indicação') && (item.indicado_por || item.referrer)) {
-            referralInfo = `<span style="background:rgba(9,8,9,0.08); padding:3px 6px; border-radius:3px; font-weight:700; color:var(--ink);">👤 ${item.indicado_por || item.referrer}</span>`;
+            referralInfo = `<span style="background:rgba(244,242,243,0.12); padding:3px 8px; border-radius:4px; font-weight:700; color:#F4F2F3; border:1px solid rgba(244,242,243,0.2);">👤 ${item.indicado_por || item.referrer}</span>`;
           }
 
           tr.innerHTML = `
             <td>
-              <div class="lead-cell-name" style="font-size: 14.5px;"><b>${companyName}</b></div>
-              <div class="lead-cell-email">${decisorName} (${decisorRole}) · <a href="mailto:${decisorEmail}" class="lead-email-link">${decisorEmail}</a></div>
+              <div class="lead-cell-name" style="font-size: 14.5px; color:#F4F2F3;"><b>${companyName}</b></div>
+              <div class="lead-cell-email" style="color:rgba(244,242,243,0.7);">${decisorName} (${decisorRole}) · <a href="mailto:${decisorEmail}" class="lead-email-link" style="color:#F4F2F3;">${decisorEmail}</a></div>
             </td>
             <td><span class="lead-cell-segment">${segmento}</span></td>
             <td>
-              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); margin-bottom: 2px;">${linha}</div>
-              <div style="font-size: 12.5px; color: var(--mid);">${gargalo}</div>
+              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #F4F2F3; margin-bottom: 2px;">${linha}</div>
+              <div style="font-size: 12.5px; color: rgba(244,242,243,0.6);">${gargalo}</div>
             </td>
             <td><span class="lead-cell-source">${referralInfo}</span></td>
-            <td style="font-size: 12px; color: var(--ink); font-weight: 600;">${prazo}</td>
+            <td style="font-size: 12px; color: #F4F2F3; font-weight: 600;">${prazo}</td>
             <td><span class="lead-status-pill status-${item.status || 'novo'}">${getStatusLabel(item.status || 'novo')}</span></td>
             <td style="text-align: right; white-space: nowrap;">
-              <button class="action-icon-btn view-briefing-btn" data-id="${item.id}" title="Ver Briefing Completo" style="font-size:12px; font-weight:700; background:var(--ink); color:var(--bone); border-radius:3px; padding:6px 12px; border:none; cursor:pointer;">Ver Briefing</button>
+              <button class="action-icon-btn view-briefing-btn" data-id="${item.id}" title="Ver Briefing Completo" style="font-size:11.5px; font-weight:700; background:#F4F2F3; color:#090809; border-radius:4px; padding:6px 12px; border:none; cursor:pointer; text-transform:uppercase; letter-spacing:0.06em;">Ver Briefing</button>
               <button class="action-icon-btn delete-briefing-btn" data-id="${item.id}" title="Excluir" style="color:#d9534f; margin-left:6px; background:transparent; border:none; cursor:pointer; font-size:14px;">🗑️</button>
             </td>
           `;
@@ -736,17 +670,17 @@
     function attachTableEvents() {
       // Editar Lead
       document.querySelectorAll('.edit-lead-btn').forEach(btn => {
-        btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+        btn.onclick = () => openEditModal(btn.dataset.id);
       });
 
       // Ver Briefing
       document.querySelectorAll('.view-briefing-btn').forEach(btn => {
-        btn.addEventListener('click', () => openBriefingModal(btn.dataset.id));
+        btn.onclick = () => openBriefingModal(btn.dataset.id);
       });
 
       // Excluir Lead / Briefing
       document.querySelectorAll('.delete-lead-btn, .delete-briefing-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.onclick = () => {
           const id = btn.dataset.id;
           const isBriefing = btn.classList.contains('delete-briefing-btn');
           if (confirm('Deseja realmente remover este registro do painel?')) {
@@ -760,7 +694,7 @@
             renderTable();
             showToast('Registro excluído com sucesso.');
           }
-        });
+        };
       });
     }
 
@@ -887,28 +821,23 @@
     }
 
     function initEvents() {
-      // Alternância de Abas
+      // Alternância de Abas com Suporte a Touch e Click
       const tabLeads = document.getElementById('tab-leads-btn');
       const tabBriefings = document.getElementById('tab-briefings-btn');
 
+      function selectTab(tab) {
+        currentTab = tab;
+        renderTable();
+      }
+
       if (tabLeads) {
-        tabLeads.onclick = (e) => {
-          e.preventDefault();
-          currentTab = 'leads';
-          tabLeads.classList.add('active');
-          if (tabBriefings) tabBriefings.classList.remove('active');
-          renderTable();
-        };
+        tabLeads.addEventListener('click', (e) => { e.preventDefault(); selectTab('leads'); });
+        tabLeads.addEventListener('touchend', (e) => { e.preventDefault(); selectTab('leads'); });
       }
 
       if (tabBriefings) {
-        tabBriefings.onclick = (e) => {
-          e.preventDefault();
-          currentTab = 'briefings';
-          tabBriefings.classList.add('active');
-          if (tabLeads) tabLeads.classList.remove('active');
-          renderTable();
-        };
+        tabBriefings.addEventListener('click', (e) => { e.preventDefault(); selectTab('briefings'); });
+        tabBriefings.addEventListener('touchend', (e) => { e.preventDefault(); selectTab('briefings'); });
       }
 
       // Fechar modal de briefing
@@ -916,15 +845,16 @@
       const closeBriefingBtn2 = document.getElementById('admin-close-briefing-btn2');
       const briefingModal = document.getElementById('admin-modal-briefing');
       [closeBriefingBtn, closeBriefingBtn2].forEach(b => {
-        if (b) b.onclick = () => {
-          if (briefingModal) briefingModal.classList.remove('open');
-        };
+        if (b) {
+          b.addEventListener('click', () => { if (briefingModal) briefingModal.classList.remove('open'); });
+          b.addEventListener('touchend', () => { if (briefingModal) briefingModal.classList.remove('open'); });
+        }
       });
 
       // Copiar Briefing Formatado
       const copyBriefingBtn = document.getElementById('admin-copy-briefing-btn');
       if (copyBriefingBtn) {
-        copyBriefingBtn.onclick = () => {
+        copyBriefingBtn.addEventListener('click', () => {
           if (!currentBriefingData) return;
           const b = currentBriefingData;
           const company = b.empresa || b.company || 'Empresa';
@@ -963,14 +893,14 @@ Tentativas anteriores: ${tentativas}
 
 Estrutura decisória: ${decisores}
 Prazo esperado: ${prazo}
-Canal de origem: ${canal} ${indicadoPor ? `(Indicado por: ${indicadoPor})` : ''}
+Canal de origem: ${canal}${indicadoPor ? ` (Indicado por: ${indicadoPor})` : ''}
 
 Contato: ${name} (${role}) · ${phone} · ${email}`;
 
           navigator.clipboard.writeText(formattedText).then(() => {
             showToast('Briefing formatado copiado com sucesso!');
           });
-        };
+        });
       }
 
       // Busca e Filtros
@@ -991,7 +921,7 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
       if (btnRefresh) {
         btnRefresh.onclick = () => {
           syncWithServer();
-          showToast('Painel sincronizado.');
+          showToast('Painel sincronizado com a nuvem.');
         };
       }
 
@@ -1020,9 +950,12 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
       saveBriefingLocal,
       isLoggedIn,
       openPanel,
-      render
+      render,
+      syncWithServer
     };
   })();
+
+  AdminDashboard.init();
 
   AdminDashboard.init();
 

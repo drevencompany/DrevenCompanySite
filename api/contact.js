@@ -1,3 +1,4 @@
+const db = require('./lib/db');
 const nodemailer = require('nodemailer');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
