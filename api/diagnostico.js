@@ -62,7 +62,7 @@ module.exports = async (req, res) => {
       }
 
       if (!email || !EMAIL_REGEX.test(email)) {
-        return res.status(400).json({ success: false, error: 'Por favor, informe um endereço de e-mail corporativo válido.' });
+        return res.status(400).json({ success: false, error: 'Por favor, informe um endereço de e-mail válido.' });
       }
 
       const cleanLocations = Array.isArray(data.ferramentas_atuais || data.data_location)
