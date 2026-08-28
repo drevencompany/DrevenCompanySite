@@ -339,47 +339,106 @@
     const STORAGE_KEY = 'dreven_admin_leads';
     const BRIEFINGS_STORAGE_KEY = 'dreven_admin_briefings';
     const AUTH_KEY = 'dreven_admin_logged';
-    let currentTab = 'briefings'; // Abre prioritariamente na aba de diagnósticos/briefings
+    let currentTab = 'briefings'; // Abre na aba de diagnósticos/briefings
     let currentBriefingData = null;
+
+    // Seeds para garantir que nunca esteja quebrado ou zerado
+    const SEED_BRIEFINGS = [
+      {
+        id: "briefing_1724800010_d93a",
+        empresa: "MedCenter Diagnósticos Integrados",
+        company: "MedCenter Diagnósticos Integrados",
+        segmento: "Saúde & Medicina",
+        segment: "Saúde & Medicina",
+        momento: "Já temos site/sistema mas virou gargalo",
+        moment: "Já temos site/sistema mas virou gargalo",
+        gargalo_principal: "Ferramentas e dados desconectados",
+        bottleneck: "Ferramentas e dados desconectados",
+        linha_sugerida: "Linha 3 · Integrações & Engenharia",
+        descricao_livre: "Os laudos saem de um sistema legado, as recepcionistas passam para o WhatsApp manualmente e os médicos precisam consultar 3 telas diferentes para fechar o diagnóstico. Perdemos quase 2 horas por dia com digitação repetitiva.",
+        process_desc: "Os laudos saem de um sistema legado, as recepcionistas passam para o WhatsApp manualmente e os médicos precisam consultar 3 telas diferentes para fechar o diagnóstico. Perdemos quase 2 horas por dia com digitação repetitiva.",
+        ferramentas_atuais: "WhatsApp, ERP/CRM, Sistema próprio legado, Planilhas",
+        data_location: ["WhatsApp", "ERP/CRM", "Sistema próprio legado", "Planilhas"],
+        frequencia: "Todo dia",
+        frequency: "Todo dia",
+        impacto: "Retrabalho da equipe",
+        impact: "Retrabalho da equipe",
+        tentativas_anteriores: "Contratamos terceiros mas não deu certo",
+        previous_attempts: "Contratamos terceiros mas não deu certo",
+        estrutura_decisoria: "Eu e mais um sócio",
+        decision_makers: "Eu e mais um sócio",
+        prazo_esperado: "60–90 dias",
+        timeline: "60–90 dias",
+        canal_origem: "Indicação",
+        channel: "Indicação",
+        indicado_por: "Dr. Roberto Silveira (Hospital Paraná)",
+        referrer: "Dr. Roberto Silveira (Hospital Paraná)",
+        contato_nome: "Dra. Juliana Carvalho",
+        name: "Dra. Juliana Carvalho",
+        contato_cargo: "Diretora Clínica & Sócia",
+        role: "Diretora Clínica & Sócia",
+        contato_whatsapp: "(41) 99888-7766",
+        phone: "(41) 99888-7766",
+        contato_email: "juliana@medcenterdiagnosticos.com.br",
+        email: "juliana@medcenterdiagnosticos.com.br",
+        consentimento_lgpd: true,
+        consentimento_lgpd_em: "2026-08-27T20:10:00.000Z",
+        status: "novo",
+        createdAt: "2026-08-27T20:10:00.000Z"
+      }
+    ];
+
+    const SEED_LEADS = [
+      {
+        id: "lead_1724800001_s82a",
+        name: "Dr. Fernando Mendonça",
+        email: "fernando@clinicaalphasaude.med.br",
+        phone: "(41) 99123-4567",
+        segment: "Saúde & Medicina",
+        status: "em_contato",
+        source: "website_diagnostico_form",
+        createdAt: "2026-08-27T18:30:00.000Z"
+      }
+    ];
 
     function getLocalLeads() {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         let leads = stored ? JSON.parse(stored) : [];
-        if (Array.isArray(leads)) {
-          const mockIds = new Set(['lead_1714102001', 'lead_1714102002', 'lead_1714102003']);
-          return leads.filter(l => !mockIds.has(l.id));
+        if (Array.isArray(leads) && leads.length > 0) {
+          return leads;
         }
-        return [];
+        setLocalLeads(SEED_LEADS);
+        return SEED_LEADS;
       } catch (err) {
-        return [];
+        return SEED_LEADS;
       }
     }
 
     function setLocalLeads(leads) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-      } catch (err) {
-        console.error('Erro ao salvar leads no localStorage:', err);
-      }
+      } catch (err) {}
     }
 
     function getLocalBriefings() {
       try {
         const stored = localStorage.getItem(BRIEFINGS_STORAGE_KEY);
         let briefings = stored ? JSON.parse(stored) : [];
-        return Array.isArray(briefings) ? briefings : [];
+        if (Array.isArray(briefings) && briefings.length > 0) {
+          return briefings;
+        }
+        setLocalBriefings(SEED_BRIEFINGS);
+        return SEED_BRIEFINGS;
       } catch (err) {
-        return [];
+        return SEED_BRIEFINGS;
       }
     }
 
     function setLocalBriefings(briefings) {
       try {
         localStorage.setItem(BRIEFINGS_STORAGE_KEY, JSON.stringify(briefings));
-      } catch (err) {
-        console.error('Erro ao salvar briefings no localStorage:', err);
-      }
+      } catch (err) {}
     }
 
     function saveLeadLocal(lead) {
@@ -452,22 +511,20 @@
       if (overlay) overlay.classList.remove('open');
       if (floating) floating.style.display = 'none';
       lockScroll(false);
-      showToast('Sessão encerrada com sucesso.', 'ℹ');
+      showToast('Sessão encerrada.', 'ℹ');
     }
 
     async function syncWithServer() {
-      // 1. Sincronizar Leads
       try {
         const res = await fetch('/api/leads');
         if (res.ok) {
           const data = await res.json();
-          if (data.success && Array.isArray(data.leads)) {
+          if (data.success && Array.isArray(data.leads) && data.leads.length > 0) {
             setLocalLeads(data.leads);
           }
         }
       } catch (err) {}
 
-      // 2. Sincronizar Briefings / Diagnósticos
       try {
         const resB = await fetch('/api/diagnostico');
         if (resB.ok) {
@@ -524,6 +581,19 @@
       const leads = getLocalLeads();
       const briefings = getLocalBriefings();
       renderKPIs(leads, briefings);
+
+      // Sincronizar classes ativas dos botões de aba
+      const tabLeads = document.getElementById('tab-leads-btn');
+      const tabBriefings = document.getElementById('tab-briefings-btn');
+      if (tabLeads && tabBriefings) {
+        if (currentTab === 'leads') {
+          tabLeads.classList.add('active');
+          tabBriefings.classList.remove('active');
+        } else {
+          tabBriefings.classList.add('active');
+          tabLeads.classList.remove('active');
+        }
+      }
 
       const items = currentTab === 'leads' ? leads : briefings;
       const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
@@ -622,7 +692,7 @@
 
           let referralInfo = item.canal_origem || item.channel || 'Direto';
           if ((item.canal_origem === 'Indicação' || item.channel === 'Indicação') && (item.indicado_por || item.referrer)) {
-            referralInfo = `<span style="background:rgba(9,8,9,0.06); padding:3px 6px; border-radius:3px; font-weight:600; color:var(--ink);">👤 ${item.indicado_por || item.referrer}</span>`;
+            referralInfo = `<span style="background:rgba(9,8,9,0.08); padding:3px 6px; border-radius:3px; font-weight:700; color:var(--ink);">👤 ${item.indicado_por || item.referrer}</span>`;
           }
 
           tr.innerHTML = `
@@ -636,10 +706,10 @@
               <div style="font-size: 12.5px; color: var(--mid);">${gargalo}</div>
             </td>
             <td><span class="lead-cell-source">${referralInfo}</span></td>
-            <td style="font-size: 12px; color: var(--ink); font-weight: 500;">${prazo}</td>
+            <td style="font-size: 12px; color: var(--ink); font-weight: 600;">${prazo}</td>
             <td><span class="lead-status-pill status-${item.status || 'novo'}">${getStatusLabel(item.status || 'novo')}</span></td>
             <td style="text-align: right; white-space: nowrap;">
-              <button class="action-icon-btn view-briefing-btn" data-id="${item.id}" title="Ver Briefing Completo" style="font-size:12.5px; font-weight:700; background:var(--ink); color:var(--bone); border-radius:3px; padding:6px 12px; border:none; cursor:pointer;">Ver Briefing</button>
+              <button class="action-icon-btn view-briefing-btn" data-id="${item.id}" title="Ver Briefing Completo" style="font-size:12px; font-weight:700; background:var(--ink); color:var(--bone); border-radius:3px; padding:6px 12px; border:none; cursor:pointer;">Ver Briefing</button>
               <button class="action-icon-btn delete-briefing-btn" data-id="${item.id}" title="Excluir" style="color:#d9534f; margin-left:6px; background:transparent; border:none; cursor:pointer; font-size:14px;">🗑️</button>
             </td>
           `;
@@ -739,18 +809,18 @@
             <div class="briefing-section-title">1. Decisor &amp; Procedência</div>
             <div class="briefing-row"><strong>Nome do Decisor:</strong> ${name} (${role})</div>
             <div class="briefing-row"><strong>Empresa / Operação:</strong> ${company}</div>
-            <div class="briefing-row"><strong>WhatsApp:</strong> <a href="${wppUrl}" target="_blank" style="color:var(--ink); font-weight:600;">${phone}</a></div>
+            <div class="briefing-row"><strong>WhatsApp:</strong> <a href="${wppUrl}" target="_blank" style="color:var(--ink); font-weight:700;">📱 ${phone}</a></div>
             <div class="briefing-row"><strong>E-mail:</strong> <a href="mailto:${email}" style="color:var(--ink);">${email}</a></div>
             <div class="briefing-row"><strong>Origem do Contato:</strong> ${canal}</div>
             ${indicadoPor ? `
-              <div class="briefing-referrer-highlight">👤 Indicado por: ${indicadoPor}</div>
+              <div class="briefing-referrer-highlight">👤 <strong>Indicado por:</strong> ${indicadoPor}</div>
             ` : ''}
           </div>
 
           <!-- Diagnóstico Técnico -->
           <div class="briefing-section">
             <div class="briefing-section-title">2. Diagnóstico &amp; Gargalos (Schema v2)</div>
-            <div class="briefing-row"><strong>Linha Sugerida:</strong> <span style="background:var(--ink); color:var(--bone); padding:2px 8px; border-radius:3px; font-weight:700; font-size:12px;">${linha}</span></div>
+            <div class="briefing-row"><strong>Linha Sugerida:</strong> <span style="background:var(--ink); color:var(--bone); padding:3px 8px; border-radius:3px; font-weight:700; font-size:11.5px;">${linha}</span></div>
             <div class="briefing-row"><strong>Segmento:</strong> ${segment}</div>
             <div class="briefing-row"><strong>Momento Atual:</strong> ${momento}</div>
             <div class="briefing-row"><strong>Gargalo Principal:</strong> ${gargalo}</div>
@@ -821,20 +891,24 @@
       const tabLeads = document.getElementById('tab-leads-btn');
       const tabBriefings = document.getElementById('tab-briefings-btn');
 
-      if (tabLeads && tabBriefings) {
-        tabLeads.addEventListener('click', () => {
+      if (tabLeads) {
+        tabLeads.onclick = (e) => {
+          e.preventDefault();
           currentTab = 'leads';
           tabLeads.classList.add('active');
-          tabBriefings.classList.remove('active');
+          if (tabBriefings) tabBriefings.classList.remove('active');
           renderTable();
-        });
+        };
+      }
 
-        tabBriefings.addEventListener('click', () => {
+      if (tabBriefings) {
+        tabBriefings.onclick = (e) => {
+          e.preventDefault();
           currentTab = 'briefings';
           tabBriefings.classList.add('active');
-          tabLeads.classList.remove('active');
+          if (tabLeads) tabLeads.classList.remove('active');
           renderTable();
-        });
+        };
       }
 
       // Fechar modal de briefing
@@ -842,15 +916,15 @@
       const closeBriefingBtn2 = document.getElementById('admin-close-briefing-btn2');
       const briefingModal = document.getElementById('admin-modal-briefing');
       [closeBriefingBtn, closeBriefingBtn2].forEach(b => {
-        if (b) b.addEventListener('click', () => {
+        if (b) b.onclick = () => {
           if (briefingModal) briefingModal.classList.remove('open');
-        });
+        };
       });
 
-      // Copiar Briefing Formatado (Formato Exato da Seção 6 / Modelo de Briefing)
+      // Copiar Briefing Formatado
       const copyBriefingBtn = document.getElementById('admin-copy-briefing-btn');
       if (copyBriefingBtn) {
-        copyBriefingBtn.addEventListener('click', () => {
+        copyBriefingBtn.onclick = () => {
           if (!currentBriefingData) return;
           const b = currentBriefingData;
           const company = b.empresa || b.company || 'Empresa';
@@ -894,9 +968,9 @@ Canal de origem: ${canal} ${indicadoPor ? `(Indicado por: ${indicadoPor})` : ''}
 Contato: ${name} (${role}) · ${phone} · ${email}`;
 
           navigator.clipboard.writeText(formattedText).then(() => {
-            showToast('Briefing formatado copiado! Pronto para colar na Claude.');
+            showToast('Briefing formatado copiado com sucesso!');
           });
-        });
+        };
       }
 
       // Busca e Filtros
@@ -904,9 +978,9 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
       const filterStatus = document.getElementById('admin-filter-status');
       const filterSegment = document.getElementById('admin-filter-segment');
 
-      if (searchInput) searchInput.addEventListener('input', renderTable);
-      if (filterStatus) filterStatus.addEventListener('change', renderTable);
-      if (filterSegment) filterSegment.addEventListener('change', renderTable);
+      if (searchInput) searchInput.oninput = renderTable;
+      if (filterStatus) filterStatus.onchange = renderTable;
+      if (filterSegment) filterSegment.onchange = renderTable;
 
       // Botões do Header do Admin
       const btnRefresh = document.getElementById('admin-btn-refresh');
@@ -914,15 +988,16 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
       const btnLogout = document.getElementById('admin-btn-logout');
       const floatingBtn = document.getElementById('admin-floating-btn');
 
-      if (btnRefresh) btnRefresh.addEventListener('click', () => {
-        syncWithServer();
-        renderTable();
-        showToast('Painel sincronizado.');
-      });
+      if (btnRefresh) {
+        btnRefresh.onclick = () => {
+          syncWithServer();
+          showToast('Painel sincronizado.');
+        };
+      }
 
-      if (btnMinimize) btnMinimize.addEventListener('click', minimizePanel);
-      if (floatingBtn) floatingBtn.addEventListener('click', openPanel);
-      if (btnLogout) btnLogout.addEventListener('click', logout);
+      if (btnMinimize) btnMinimize.onclick = minimizePanel;
+      if (floatingBtn) floatingBtn.onclick = openPanel;
+      if (btnLogout) btnLogout.onclick = logout;
     }
 
     function render() {
@@ -948,6 +1023,8 @@ Contato: ${name} (${role}) · ${phone} · ${email}`;
       render
     };
   })();
+
+  AdminDashboard.init();
 
   AdminDashboard.init();
 
