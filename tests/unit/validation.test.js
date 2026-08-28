@@ -71,6 +71,12 @@ test('accepts every current contact segment option', () => {
   }
 });
 
+test('accepts the contact form sentinel when no custom segment was supplied', () => {
+  const contact = validateContact({ ...validContact, segment: 'Outro nicho...' });
+
+  assert.equal(contact.segment, 'Outro nicho...');
+});
+
 test('rejects non-string contact fields before normalization', () => {
   assert.throws(() => validateContact({ ...validContact, name: { trim() {} } }),
     error => error.code === 'INVALID_TYPE' && error.field === 'name');
@@ -112,6 +118,17 @@ test('accepts every current diagnostic enum option', () => {
   for (const location of ['Planilhas', 'WhatsApp', 'ERP/CRM', 'E-mails', 'Sistema próprio legado', 'Papel / na cabeça da equipe']) {
     assert.deepEqual(validateDiagnostic({ ...validDiagnostic, ferramentas_atuais: [location] }).ferramentas_atuais, [location]);
   }
+});
+
+test('accepts the diagnostic frontend serialized custom segment shape', () => {
+  const diagnostic = validateDiagnostic({
+    ...validDiagnostic,
+    segmento: 'Outro: Economia criativa',
+    segmento_outro: 'Economia criativa'
+  });
+
+  assert.equal(diagnostic.segmento, 'Outro: Economia criativa');
+  assert.equal(diagnostic.segmento_outro, 'Economia criativa');
 });
 
 test('diagnostic requires explicit LGPD consent', () => {

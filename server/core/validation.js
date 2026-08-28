@@ -10,7 +10,8 @@ const CONTACT_SEGMENTS = new Set([
   'Educação & Infoprodutos',
   'Imobiliário & Construção Civil',
   'Gastronomia, Hotelaria & Lifestyle',
-  'Indústria & Logística'
+  'Indústria & Logística',
+  'Outro nicho...'
 ]);
 
 const DIAGNOSTIC_OPTIONS = {
@@ -70,6 +71,15 @@ function requireOption(value, field, options) {
   return normalized;
 }
 
+function normalizeDiagnosticSegment(value) {
+  const segment = requireText(value, 'segmento', { min: 1, maxBytes: 160 });
+  if (DIAGNOSTIC_OPTIONS.segmento.has(segment)) return segment;
+  if (segment.startsWith('Outro: ') && Buffer.byteLength(segment.slice(7).trim(), 'utf8') >= 2) {
+    return segment;
+  }
+  throw new ValidationError('INVALID_OPTION', 'segmento');
+}
+
 function requireOptionList(value, field, options) {
   if (!Array.isArray(value)) throw new ValidationError('INVALID_TYPE', field);
   if (value.length < 1 || value.length > options.size) throw new ValidationError('INVALID_LENGTH', field);
@@ -101,7 +111,7 @@ function validateDiagnostic(input) {
   requireObject(input);
   if (input.consentimento_lgpd !== true) throw new ValidationError('CONSENT_REQUIRED', 'consentimento_lgpd');
 
-  const segmento = requireOption(input.segmento, 'segmento', DIAGNOSTIC_OPTIONS.segmento);
+  const segmento = normalizeDiagnosticSegment(input.segmento);
   const segmentoOutro = optionalText(input.segmento_outro, 'segmento_outro', 160);
   const canalOrigem = requireOption(input.canal_origem, 'canal_origem', DIAGNOSTIC_OPTIONS.canal_origem);
   const indicadoPor = optionalText(input.indicado_por, 'indicado_por', 160);
